@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { bases, laboratorios, limparNome, nomeValido, type EstadoWsl } from "../laboratorio";
 import { ponte } from "../ponte";
 
+const PRINCIPAL = "principal";
+
 /** Laboratório: ambientes Linux isolados e descartáveis, um por teste. */
 export function Laboratorio() {
   const [estado, setEstado] = useState<EstadoWsl | null>(null);
@@ -29,6 +31,20 @@ export function Laboratorio() {
     const token = (() => { try { return localStorage.getItem("vynx.github.token") ?? ""; } catch { return ""; } })();
     if (!token) { setErro("Conecte o GitHub no Painel Dev antes de importar os projetos."); return; }
     await executar("Importando os projetos", async () => { setAviso(await ponte.importarProjetos(lab, token)); });
+  };
+
+  const criarPrincipal = async () => {
+    setAviso("");
+    const token = (() => { try { return localStorage.getItem("vynx.github.token") ?? ""; } catch { return ""; } })();
+    if (!token) { setErro("Conecte o GitHub no Painel Dev antes de criar o laboratório principal."); return; }
+    await executar("Montando o laboratório principal", async () => {
+      setAviso("1 de 3: criando o Linux…");
+      await ponte.criarLaboratorio(base, PRINCIPAL);
+      setAviso("2 de 3: trazendo os seus projetos do GitHub…");
+      const r = await ponte.importarProjetos(PRINCIPAL, token);
+      setAviso(`${r} 3 de 3: abrindo o terminal que instala o Claude. Quando ele terminar, digite claude.`);
+      await ponte.instalarClaude(PRINCIPAL);
+    });
   };
 
   if (!estado) return <p className="text-suave">Procurando o WSL…</p>;
@@ -60,6 +76,13 @@ export function Laboratorio() {
       {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
       {aviso && <p role="status" className="rounded-xl border border-neon/40 bg-painel p-3 text-sm text-neon">{aviso}</p>}
       {ocupado && <p role="status" className="rounded-xl border border-borda bg-painel p-3 text-sm text-suave">{ocupado}… isso pode levar alguns minutos.</p>}
+      {!labs.some((l) => l.nome === PRINCIPAL) && opcoes.length > 0 && (
+        <div className="rounded-2xl border border-neon/40 bg-painel p-5">
+          <h2 className="font-bold">Laboratório principal</h2>
+          <p className="mt-1 text-sm text-suave">O seu lugar de trabalho: já nasce com os projetos do GitHub e o Claude instalado. Os outros laboratórios ficam para testes descartáveis.</p>
+          <button onClick={() => void criarPrincipal()} disabled={!!ocupado || !base} className="mt-3 min-h-11 rounded-xl bg-neon px-5 font-extrabold text-fundo disabled:opacity-40">Criar laboratório principal</button>
+        </div>
+      )}
       {labs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-borda p-8 text-center text-suave"><p className="text-4xl" aria-hidden>🧪</p><p className="mt-2">Nenhum laboratório ainda. Crie o primeiro para testar um programa sem risco.</p></div>
       ) : (
@@ -67,7 +90,7 @@ export function Laboratorio() {
           {labs.map((l) => (
             <li key={l.completo} className="flex flex-wrap items-center gap-3 rounded-2xl border border-borda bg-painel p-4">
               <span className={`size-2.5 rounded-full ${l.estado === "Running" ? "bg-ok" : "bg-suave"}`} aria-hidden />
-              <div className="min-w-0 flex-1"><b className="block truncate">{l.nome}</b><span className="text-xs text-suave">{l.estado === "Running" ? "ligado" : "desligado"} · isolado</span></div>
+              <div className="min-w-0 flex-1"><b className="block truncate">{l.nome}{l.nome === PRINCIPAL && <span className="ml-2 rounded-full bg-neon/20 px-2 py-0.5 text-[10px] font-bold uppercase text-neon">principal</span>}</b><span className="text-xs text-suave">{l.estado === "Running" ? "ligado" : "desligado"} · isolado</span></div>
               <button onClick={() => void executar("Abrindo o terminal", () => ponte.abrirTerminal(l.nome))} disabled={!!ocupado} className="min-h-11 rounded-xl border border-neon px-4 font-bold text-neon disabled:opacity-40">Abrir terminal</button>
               <button onClick={() => void executar("Instalando o Claude", () => ponte.instalarClaude(l.nome))} disabled={!!ocupado} className="min-h-11 rounded-xl border border-borda px-4 font-bold disabled:opacity-40">Instalar Claude</button>
               <button onClick={() => void importar(l.nome)} disabled={!!ocupado} className="min-h-11 rounded-xl border border-borda px-4 font-bold disabled:opacity-40">Importar projetos</button>
@@ -102,7 +125,7 @@ export function Laboratorio() {
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" role="dialog" aria-label="Descartar laboratório">
           <div className="w-full max-w-sm space-y-4 rounded-3xl border border-borda bg-painel p-5">
             <h2 className="text-xl font-extrabold">Descartar “{descartar}”?</h2>
-            <p className="text-sm text-suave">Tudo o que está dentro desse laboratório será apagado, sem volta.</p>
+            <p className="text-sm text-suave">Tudo o que está dentro desse laboratório será apagado, sem volta.{descartar === PRINCIPAL ? " Este é o laboratório principal: o Claude, a sua entrada na conta e os projetos importados vão junto." : ""}</p>
             <div className="flex gap-3">
               <button onClick={() => setDescartar(null)} className="min-h-11 flex-1 rounded-xl border border-borda">Manter</button>
               <button onClick={() => { const n = descartar; setDescartar(null); void executar("Descartando", () => ponte.descartarLaboratorio(n)); }} className="min-h-11 flex-1 rounded-xl bg-erro font-extrabold text-fundo">Descartar</button>

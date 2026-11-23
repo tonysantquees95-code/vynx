@@ -14,6 +14,8 @@ export const NOVIDADES: Novidade[] = [
   { id: 7, data: "2026-11-23", tipo: "novo", titulo: "Documentos dentro do Vynx", texto: "Nova área Documentos: o Vindex abre numa janela do Vynx para juntar, dividir, converter e editar PDF e arquivos de escritório. Os arquivos ficam no seu computador." },
   { id: 8, data: "2026-11-23", tipo: "novo", titulo: "Claude dentro do laboratório", texto: "Em Laboratório, o botão Instalar Claude prepara o Claude no seu Linux isolado. Depois é só abrir o terminal, digitar claude e entrar com a sua conta para programar de lá." },
   { id: 9, data: "2026-11-23", tipo: "novo", titulo: "Importar projetos", texto: "Em Laboratório, o botão Importar projetos traz todos os seus repositórios do GitHub para dentro do Linux e prepara um resumo de cada um. No Claude, digite /projetos para ele saber onde cada projeto parou." },
+  { id: 10, data: "2026-11-23", tipo: "novo", titulo: "Laboratório principal", texto: "Em Laboratório, o botão Criar laboratório principal monta o seu lugar de trabalho: um Linux com os projetos do GitHub já importados e o Claude instalado. Ele avisa antes de ser descartado." },
+  { id: 11, data: "2026-11-23", tipo: "correcao", titulo: "Painel Dev não abre mais APK no navegador", texto: "Arquivos APK (de celular) não têm mais o botão Baixar, que abria o navegador e o Windows não sabia o que fazer. Nos apps de Android use Testar no celular virtual." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

@@ -99,7 +99,9 @@ export function PainelDev({ aoMudarConexao }: { aoMudarConexao?: () => void }) {
                           <li key={f.url} className="flex flex-wrap items-center gap-2">
                             <span className="min-w-0 flex-1 truncate text-sm">{f.nome} <span className="text-xs text-suave">{tamanhoLegivel(f.tamanho)}</span></span>
                             {apk && <button onClick={() => void testarNoCelular(aberto, f.url)} disabled={!!ocupado} className="min-h-10 rounded-lg border border-neon px-3 text-xs font-bold text-neon disabled:opacity-40">Testar no celular virtual</button>}
-                            <button onClick={() => void ponte.abrirLink(f.url)} className="min-h-10 rounded-lg border border-borda px-3 text-xs">Baixar</button>
+                            {/\.apk$/i.test(f.nome)
+                              ? (!apk && <span className="text-xs text-suave">APK é para celular Android</span>)
+                              : <button onClick={() => void ponte.abrirLink(f.url)} className="min-h-10 rounded-lg border border-borda px-3 text-xs">Baixar</button>}
                           </li>
                         );
                       })}
