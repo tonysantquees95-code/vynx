@@ -1,0 +1,104 @@
+import { useCallback, useEffect, useState } from "react";
+import { bases, laboratorios, limparNome, nomeValido, type EstadoWsl } from "../laboratorio";
+import { ponte } from "../ponte";
+
+/** Laboratório: ambientes Linux isolados e descartáveis, um por teste. */
+export function Laboratorio() {
+  const [estado, setEstado] = useState<EstadoWsl | null>(null);
+  const [erro, setErro] = useState("");
+  const [ocupado, setOcupado] = useState("");
+  const [criando, setCriando] = useState(false);
+  const [nome, setNome] = useState("");
+  const [base, setBase] = useState("");
+  const [descartar, setDescartar] = useState<string | null>(null);
+
+  const ler = useCallback(async () => {
+    try { const e = await ponte.estadoWsl(); setEstado(e); setErro(""); setBase((b) => b || bases(e.distros)[0]?.nome || ""); }
+    catch (e) { setErro(String(e)); setEstado({ instalado: false, virtualizacao: null, distros: [] }); }
+  }, []);
+  useEffect(() => { void ler(); }, [ler]);
+
+  const executar = async (rotulo: string, f: () => Promise<void>) => {
+    setOcupado(rotulo); setErro("");
+    try { await f(); await ler(); } catch (e) { setErro(String(e)); } finally { setOcupado(""); }
+  };
+
+  if (!estado) return <p className="text-suave">Procurando o WSL…</p>;
+  if (!estado.instalado) return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-extrabold">Laboratório</h1>
+      <div className="rounded-2xl border border-aviso/40 bg-painel p-5">
+        <h2 className="font-bold text-aviso">O WSL2 ainda não está instalado</h2>
+        <p className="mt-1 text-sm text-suave">O laboratório usa o Linux do Windows (WSL2). Para ligar:</p>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-suave">
+          <li>Abra o Terminal do Windows como administrador.</li>
+          <li>Digite <code className="mono rounded bg-fundo px-1.5 py-0.5 text-neon">wsl --install</code> e aperte Enter.</li>
+          <li>Reinicie o computador quando pedir. Se der erro de virtualização, ligue-a na BIOS.</li>
+          <li>Volte aqui e toque em Verificar de novo.</li>
+        </ol>
+        <button onClick={() => void ler()} className="mt-4 rounded-xl border border-neon px-4 py-2 font-bold text-neon">Verificar de novo</button>
+      </div>
+    </div>
+  );
+
+  const labs = laboratorios(estado.distros), opcoes = bases(estado.distros);
+  const podeCriar = nomeValido(nome) && !!base && !labs.some((l) => l.nome === nome) && !ocupado;
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div><h1 className="text-2xl font-extrabold">Laboratório</h1><p className="text-sm text-suave">Um Linux isolado para cada teste. Sem acesso aos arquivos do Windows.</p></div>
+        <button onClick={() => setCriando(true)} disabled={!!ocupado} className="min-h-11 rounded-xl bg-neon px-5 font-extrabold text-fundo disabled:opacity-40">+ Criar laboratório</button>
+      </div>
+      {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
+      {ocupado && <p role="status" className="rounded-xl border border-borda bg-painel p-3 text-sm text-suave">{ocupado}… isso pode levar alguns minutos.</p>}
+      {labs.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-borda p-8 text-center text-suave"><p className="text-4xl" aria-hidden>🧪</p><p className="mt-2">Nenhum laboratório ainda. Crie o primeiro para testar um programa sem risco.</p></div>
+      ) : (
+        <ul className="space-y-3">
+          {labs.map((l) => (
+            <li key={l.completo} className="flex flex-wrap items-center gap-3 rounded-2xl border border-borda bg-painel p-4">
+              <span className={`size-2.5 rounded-full ${l.estado === "Running" ? "bg-ok" : "bg-suave"}`} aria-hidden />
+              <div className="min-w-0 flex-1"><b className="block truncate">{l.nome}</b><span className="text-xs text-suave">{l.estado === "Running" ? "ligado" : "desligado"} · isolado</span></div>
+              <button onClick={() => void executar("Abrindo o terminal", () => ponte.abrirTerminal(l.nome))} disabled={!!ocupado} className="min-h-11 rounded-xl border border-neon px-4 font-bold text-neon disabled:opacity-40">Abrir terminal</button>
+              <button onClick={() => setDescartar(l.nome)} disabled={!!ocupado} className="min-h-11 rounded-xl border border-erro/60 px-4 font-bold text-erro disabled:opacity-40">Descartar</button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {criando && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" role="dialog" aria-label="Criar laboratório">
+          <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-3xl border border-borda bg-painel p-5">
+            <h2 className="text-xl font-extrabold">Criar laboratório</h2>
+            <label className="block text-sm text-suave">Nome
+              <input value={nome} onChange={(e) => setNome(limparNome(e.target.value))} maxLength={24} placeholder="meu-teste" className="mt-1 w-full rounded-xl border border-borda bg-fundo px-3 py-3 text-texto outline-none focus:border-neon" />
+            </label>
+            {opcoes.length === 0 ? <p className="rounded-xl border border-aviso/40 p-3 text-sm text-aviso">Não achei nenhuma distribuição Linux para usar de base. Instale uma (por exemplo, Ubuntu pela Microsoft Store) e volte.</p> : (
+              <label className="block text-sm text-suave">Criar a partir de
+                <select value={base} onChange={(e) => setBase(e.target.value)} className="mt-1 w-full rounded-xl border border-borda bg-fundo px-3 py-3 text-texto">{opcoes.map((d) => <option key={d.nome}>{d.nome}</option>)}</select>
+              </label>
+            )}
+            <p className="text-xs text-suave">O laboratório é uma cópia da distribuição escolhida, criada sem acesso aos arquivos nem aos programas do Windows.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setCriando(false)} className="min-h-11 rounded-xl border border-borda px-5">Cancelar</button>
+              <button disabled={!podeCriar} onClick={() => { setCriando(false); void executar("Criando o laboratório", () => ponte.criarLaboratorio(base, nome)); setNome(""); }} className="min-h-11 flex-1 rounded-xl bg-neon font-extrabold text-fundo disabled:opacity-40">Criar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {descartar && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" role="dialog" aria-label="Descartar laboratório">
+          <div className="w-full max-w-sm space-y-4 rounded-3xl border border-borda bg-painel p-5">
+            <h2 className="text-xl font-extrabold">Descartar “{descartar}”?</h2>
+            <p className="text-sm text-suave">Tudo o que está dentro desse laboratório será apagado, sem volta.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDescartar(null)} className="min-h-11 flex-1 rounded-xl border border-borda">Manter</button>
+              <button onClick={() => { const n = descartar; setDescartar(null); void executar("Descartando", () => ponte.descartarLaboratorio(n)); }} className="min-h-11 flex-1 rounded-xl bg-erro font-extrabold text-fundo">Descartar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
