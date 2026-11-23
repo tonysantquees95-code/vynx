@@ -58,13 +58,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: npm install --no-audit --no-fund
         working-directory: app
-      - name: Testar a parte Rust
-        run: cargo test -p vynx-desktop
       - name: Instalar o Tauri e gerar os ícones
         run: |
           npm install -g @tauri-apps/cli@2
           cd desktop/src-tauri
           tauri icon ../app-icon.png
+      - name: Testar a parte Rust
+        run: cargo test -p vynx-desktop
       - name: Gerar o instalador
         working-directory: desktop/src-tauri
         run: tauri build
