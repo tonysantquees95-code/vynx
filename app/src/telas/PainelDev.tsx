@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_GITHUB, avisosDeBuild, lerRepos, lerRodadas, tempoRelativo, tokenValido, type Repo, type Rodada } from "../github";
+import { API_GITHUB, APPS_DO_PAINEL, lerVersoes, tamanhoLegivel, tempoRelativo, tokenValido, type AppDoPainel, type Versao } from "../github";
+import { APPS_ANDROID } from "../android";
 import { ponte } from "../ponte";
 
 const CHAVE = "vynx.github.token";
@@ -19,24 +20,33 @@ const ROTULO = { ok: ["ok", "bg-ok"], falhou: ["falhou", "bg-erro"], rodando: ["
 export function PainelDev({ aoMudarConexao }: { aoMudarConexao?: () => void }) {
   const [token, setToken] = useState(lerToken);
   const [campo, setCampo] = useState("");
-  const [repos, setRepos] = useState<Repo[] | null>(null);
-  const [aberto, setAberto] = useState<string | null>(null);
-  const [rodadas, setRodadas] = useState<Rodada[] | null>(null);
+  const [aberto, setAberto] = useState<AppDoPainel | null>(null);
+  const [versoes, setVersoes] = useState<Versao[] | null>(null);
   const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
+  const [ocupado, setOcupado] = useState("");
 
-  const carregar = useCallback(async (t: string) => {
-    try { setRepos(lerRepos(await github("/user/repos?sort=pushed&per_page=30", t))); setErro(""); }
-    catch (e) { setErro(e instanceof Error ? e.message : "Não consegui falar com o GitHub."); setRepos([]); }
+  const carregar = useCallback(async (app: AppDoPainel, t: string) => {
+    setVersoes(null); setErro("");
+    try { setVersoes(lerVersoes(await github(`/repos/${app.repo}/releases?per_page=12`, t))); }
+    catch (e) { setErro(e instanceof Error ? e.message : "Não consegui falar com o GitHub."); setVersoes([]); }
   }, []);
-  useEffect(() => { if (token) void carregar(token); }, [token, carregar]);
-  useEffect(() => {
-    if (!token || !aberto) { setRodadas(null); return; }
-    setRodadas(null);
-    github(`/repos/${aberto}/actions/runs?per_page=10`, token).then((d) => setRodadas(lerRodadas(d))).catch((e) => { setErro(e instanceof Error ? e.message : "Erro."); setRodadas([]); });
-  }, [aberto, token]);
+  useEffect(() => { if (token && aberto) void carregar(aberto, token); }, [token, aberto, carregar]);
+
+  const testarNoCelular = async (app: AppDoPainel, url: string) => {
+    const a = APPS_ANDROID.find((x) => x.id === app.id);
+    if (!a) return;
+    setErro(""); setAviso(""); setOcupado(url);
+    try {
+      const e = await ponte.androidEstado();
+      if (!e.pronto) throw new Error("Ligue um celular virtual na aba Android primeiro e espere a tela do Android aparecer.");
+      await ponte.androidInstalar(url, a.pacote);
+      setAviso(`Instalando o ${app.nome} no celular virtual. Acompanhe na aba Android.`);
+    } catch (x) { setErro(x instanceof Error ? x.message : String(x)); } finally { setOcupado(""); }
+  };
 
   const conectar = () => { const t = campo.trim(); if (!tokenValido(t)) { setErro("Esse token não parece certo: ele tem só letras, números, _ e -, sem espaços."); return; } guardarToken(t); setToken(t); setCampo(""); aoMudarConexao?.(); };
-  const sair = () => { guardarToken(""); setToken(""); setRepos(null); setAberto(null); setErro(""); aoMudarConexao?.(); };
+  const sair = () => { guardarToken(""); setToken(""); setAberto(null); setVersoes(null); setErro(""); aoMudarConexao?.(); };
 
   if (!token) return (
     <div className="space-y-4">
@@ -56,48 +66,51 @@ export function PainelDev({ aoMudarConexao }: { aoMudarConexao?: () => void }) {
     </div>
   );
 
-  const avisos = rodadas ? avisosDeBuild(rodadas) : [];
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h1 className="text-2xl font-extrabold">Painel Dev</h1><p className="text-sm text-suave">Seus repositórios no GitHub, do mais recente para o mais antigo.</p></div>
-        <div className="flex gap-2"><button onClick={() => void carregar(token)} className="min-h-11 rounded-xl border border-borda px-4">Atualizar</button><button onClick={sair} className="min-h-11 rounded-xl border border-erro/60 px-4 text-erro">Desconectar</button></div>
+        <div><h1 className="text-2xl font-extrabold">Painel Dev</h1><p className="text-sm text-suave">As versões dos seus apps: teste a última ou volte para a anterior.</p></div>
+        <button onClick={sair} className="min-h-11 rounded-xl border border-erro/60 px-4 text-erro">Desconectar</button>
       </div>
       {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
-      {repos === null ? <p className="text-suave">Carregando…</p> : repos.length === 0 && !erro ? <p className="text-suave">Nenhum repositório encontrado para esse token.</p> : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-          <ul className="space-y-2">
-            {repos.map((r) => (
-              <li key={r.completo}>
-                <button onClick={() => setAberto(r.completo)} aria-pressed={aberto === r.completo} className={`w-full rounded-2xl border p-4 text-left ${aberto === r.completo ? "border-neon bg-neon/10" : "border-borda bg-painel"}`}>
-                  <div className="flex items-center gap-2"><b className="truncate">{r.nome}</b>{r.privado && <span className="rounded-full bg-magenta/20 px-2 py-0.5 text-[10px] font-bold uppercase text-magenta">privado</span>}</div>
-                  {r.descricao && <p className="mt-0.5 truncate text-xs text-suave">{r.descricao}</p>}
-                  <p className="mt-1 text-xs text-suave">{tempoRelativo(r.atualizado)}{r.abertas > 0 ? ` · ${r.abertas} abertas` : ""}</p>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <section aria-label="Builds" className="rounded-2xl border border-borda bg-painel p-4">
-            {!aberto ? <p className="text-suave">Escolha um repositório para ver as últimas builds.</p> : rodadas === null ? <p className="text-suave">Carregando builds…</p> : (
-              <>
-                <h2 className="font-bold">{aberto}</h2>
-                {avisos.length > 0 && <p role="alert" className="mt-2 rounded-xl bg-erro/15 p-3 text-sm text-erro">⚠ Build quebrada: {avisos.map((a) => a.nome).join(", ")}</p>}
-                {rodadas.length === 0 ? <p className="mt-2 text-sm text-suave">Esse repositório ainda não tem builds (GitHub Actions).</p> : (
-                  <ul className="mt-3 space-y-2">
-                    {rodadas.map((r) => (
-                      <li key={r.id} className="flex items-center gap-3 rounded-xl border border-borda p-3">
-                        <span className={`size-2.5 shrink-0 rounded-full ${ROTULO[r.estado][1]}`} aria-hidden />
-                        <div className="min-w-0 flex-1"><b className="block truncate text-sm">{r.nome}</b><span className="text-xs text-suave">{ROTULO[r.estado][0]} · {r.ramo} · {tempoRelativo(r.quando)}</span></div>
-                        {r.link && <button onClick={() => void ponte.abrirLink(r.link)} className="min-h-10 rounded-lg border border-borda px-3 text-xs">Abrir</button>}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </section>
-        </div>
-      )}
+      {aviso && <p role="status" className="rounded-xl border border-neon/40 bg-painel p-3 text-sm text-neon">{aviso}</p>}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
+        <ul className="space-y-2" aria-label="Apps">
+          {APPS_DO_PAINEL.map((a) => (
+            <li key={a.id}>
+              <button onClick={() => { setAberto(a); setAviso(""); }} aria-pressed={aberto?.id === a.id} className={`w-full rounded-2xl border p-3 text-left ${aberto?.id === a.id ? "border-neon bg-neon/10" : "border-borda bg-painel"}`}>
+                <b className="block truncate">{a.nome}</b><span className="text-xs text-suave">{a.plataforma}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <section aria-label="Versões" className="rounded-2xl border border-borda bg-painel p-4">
+          {!aberto ? <p className="text-suave">Escolha um app para ver a última versão e a anterior.</p> : versoes === null ? <p className="text-suave">Carregando versões…</p> : versoes.length === 0 ? <p className="text-suave">{erro ? "Toque em outro app e volte para tentar de novo." : `O ${aberto.nome} ainda não tem versão publicada para baixar.`}</p> : (
+            <>
+              <h2 className="font-bold">{aberto.nome}</h2>
+              <ul className="mt-3 space-y-3">
+                {versoes.map((v, i) => (
+                  <li key={v.tag} className="rounded-xl border border-borda p-3">
+                    <div className="flex flex-wrap items-center gap-2"><b>{i === 0 ? "Última versão" : "Versão anterior"}</b><span className="mono text-sm text-neon">{v.tag}</span><span className="text-xs text-suave">{tempoRelativo(v.quando)}</span></div>
+                    <ul className="mt-2 space-y-2">
+                      {v.arquivos.map((f) => {
+                        const apk = /\.apk$/i.test(f.nome) && APPS_ANDROID.some((x) => x.id === aberto.id && x.apk.toLowerCase() === f.nome.toLowerCase());
+                        return (
+                          <li key={f.url} className="flex flex-wrap items-center gap-2">
+                            <span className="min-w-0 flex-1 truncate text-sm">{f.nome} <span className="text-xs text-suave">{tamanhoLegivel(f.tamanho)}</span></span>
+                            {apk && <button onClick={() => void testarNoCelular(aberto, f.url)} disabled={!!ocupado} className="min-h-10 rounded-lg border border-neon px-3 text-xs font-bold text-neon disabled:opacity-40">Testar no celular virtual</button>}
+                            <button onClick={() => void ponte.abrirLink(f.url)} className="min-h-10 rounded-lg border border-borda px-3 text-xs">Baixar</button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

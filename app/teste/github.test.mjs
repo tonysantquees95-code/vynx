@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { avisosDeBuild, estadoDaRodada, lerRepos, lerRodadas, tempoRelativo, tokenValido } from "../src/github.ts";
+import { APPS_DO_PAINEL, avisosDeBuild, estadoDaRodada, lerRepos, lerRodadas, lerVersoes, tamanhoLegivel, tempoRelativo, tokenValido } from "../src/github.ts";
 
 test("token: aceita formatos do GitHub e recusa espaço, aspas e curto demais", () => {
   assert.ok(tokenValido("ghp_abcdefghijklmnopqrstuvwxyz0123456789"));
@@ -41,4 +41,14 @@ test("tempo relativo", () => {
   assert.equal(tempoRelativo("2026-11-23T09:00:00Z", agora), "há 3 h");
   assert.equal(tempoRelativo("2026-11-20T12:00:00Z", agora), "há 3 d");
   assert.equal(tempoRelativo("lixo", agora), "");
+});
+
+test("versões: pega a última e a anterior, ignora rascunho, release sem arquivo e link de fora", () => {
+  const ok = (n) => ({ tag_name: "1." + n, name: "App 1." + n, published_at: "2026-11-23T01:00:00Z", assets: [{ name: "App.apk", size: 3145728, browser_download_url: "https://github.com/tonysantquees95-code/x/releases/download/1." + n + "/App.apk" }] });
+  const v = lerVersoes([{ ...ok(9), draft: true }, ok(8), { tag_name: "1.7", assets: [] }, { ...ok(6), assets: [{ name: "x.apk", browser_download_url: "https://evil.com/x.apk" }] }, ok(5), ok(4)]);
+  assert.deepEqual(v.map((r) => r.tag), ["1.8", "1.5"]);
+  assert.equal(v[0].arquivos[0].nome, "App.apk");
+  assert.deepEqual(lerVersoes({}), []);
+  assert.equal(tamanhoLegivel(3145728), "3.0 MB");
+  assert.ok(APPS_DO_PAINEL.length >= 10 && APPS_DO_PAINEL.every((a) => /^tonysantquees95-code\/[\w.-]+$/.test(a.repo)));
 });

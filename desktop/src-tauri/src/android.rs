@@ -209,10 +209,28 @@ pub fn ligar(nome: &str) -> Result<(), String> {
     if !p.emulador().exists() { return Err("Prepare o emulador primeiro".into()); }
     if !p.avd.join(format!("{nome}.ini")).exists() { return Err("Esse celular virtual não existe".into()); }
     let mut c = Command::new(p.emulador()); p.ambiente(&mut c);
-    c.args(["-avd", nome, "-no-boot-anim", "-no-audio"]).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+    // Placa de vídeo por software: a janela do celular abre em qualquer computador (um pouco mais lenta, mas sempre aparece).
+    c.args(["-avd", nome, "-no-boot-anim", "-no-audio", "-gpu", "swiftshader_indirect", "-no-snapshot-load"]);
+    let registro = p.raiz.join("emulador.log");
+    let (saida, erro) = match std::fs::File::create(&registro).and_then(|f| f.try_clone().map(|g| (f, g))) {
+        Ok((a, b)) => (Stdio::from(a), Stdio::from(b)),
+        Err(_) => (Stdio::null(), Stdio::null()),
+    };
+    c.stdin(Stdio::null()).stdout(saida).stderr(erro);
     #[cfg(windows)]
-    { use std::os::windows::process::CommandExt; c.creation_flags(0x0800_0008); } // sem console e desligado deste processo
-    c.spawn().map(|_| ()).map_err(|e| format!("Não consegui ligar o emulador: {e}"))
+    { use std::os::windows::process::CommandExt; c.creation_flags(0x0800_0200); } // sem console preto e fora deste processo
+    let mut filho = c.spawn().map_err(|e| format!("Não consegui ligar o emulador: {e}"))?;
+    // Se o emulador fecha logo nos primeiros segundos, algo deu errado: mostra o motivo em vez de ficar "ligando" para sempre.
+    for _ in 0..12 {
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        if let Ok(Some(_)) = filho.try_wait() {
+            let texto = std::fs::read_to_string(&registro).unwrap_or_default();
+            let fim: Vec<&str> = texto.lines().rev().filter(|l| !l.trim().is_empty()).take(3).collect();
+            let motivo = fim.into_iter().rev().collect::<Vec<_>>().join(" ");
+            return Err(format!("O emulador fechou sozinho. {}", if motivo.is_empty() { "Confira se a virtualização está ligada na BIOS (VT-x / SVM) e a Plataforma de Máquina Virtual do Windows.".to_string() } else { motivo.chars().take(300).collect() }));
+        }
+    }
+    Ok(())
 }
 
 fn adb(p: &Pastas, args: &[&str]) -> Command { let mut c = Command::new(p.adb()); sem_janela(&mut c); c.args(args); c }

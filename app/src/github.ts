@@ -65,3 +65,46 @@ export function tempoRelativo(iso: string, agora: number = Date.now()): string {
   if (h < 24) return `há ${h} h`;
   return `há ${Math.round(h / 24)} d`;
 }
+
+/** Apps da suíte que o Painel Dev acompanha (só as versões publicadas, não todos os repositórios). */
+export interface AppDoPainel { id: string; nome: string; repo: string; plataforma: string }
+export const APPS_DO_PAINEL: AppDoPainel[] = [
+  { id: "venus", nome: "Vênus", repo: "tonysantquees95-code/Venus-core", plataforma: "Android" },
+  { id: "vindex", nome: "Vindex", repo: "tonysantquees95-code/Vindex-", plataforma: "Android e Windows" },
+  { id: "vortex", nome: "Vortex", repo: "tonysantquees95-code/Vortex", plataforma: "Android e Windows" },
+  { id: "voxix", nome: "Voxix", repo: "tonysantquees95-code/voxix", plataforma: "Android e Windows" },
+  { id: "velox", nome: "Velox", repo: "tonysantquees95-code/velox-gaming-search", plataforma: "Android e Windows" },
+  { id: "vyntem", nome: "Vyntem", repo: "tonysantquees95-code/Vyntem", plataforma: "Android e Windows" },
+  { id: "drive", nome: "Vetorial Drive", repo: "tonysantquees95-code/vetorial-drive", plataforma: "Android" },
+  { id: "vspace", nome: "V-Space", repo: "tonysantquees95-code/v-space", plataforma: "Android" },
+  { id: "vetogoshi", nome: "Vetogoshi", repo: "tonysantquees95-code/vetogoshi", plataforma: "Android" },
+  { id: "vynx", nome: "Vynx OS", repo: "tonysantquees95-code/vynx", plataforma: "Windows" },
+];
+
+export interface Arquivo { nome: string; url: string; tamanho: number }
+export interface Versao { tag: string; titulo: string; quando: string; arquivos: Arquivo[] }
+
+/** Releases do GitHub → as duas versões mais novas que têm arquivo para baixar (a última e a anterior). Rascunhos ficam de fora. */
+export function lerVersoes(dados: unknown, quantas = 2): Versao[] {
+  if (!Array.isArray(dados)) return [];
+  const saida: Versao[] = [];
+  for (const r of dados) {
+    if (!r || typeof r !== "object") continue;
+    const o = r as Record<string, unknown>;
+    if (o.draft === true || typeof o.tag_name !== "string") continue;
+    const arquivos: Arquivo[] = [];
+    for (const a of Array.isArray(o.assets) ? o.assets : []) {
+      if (!a || typeof a !== "object") continue;
+      const x = a as Record<string, unknown>;
+      if (typeof x.name !== "string" || typeof x.browser_download_url !== "string") continue;
+      if (!/^https:\/\/github\.com\/tonysantquees95-code\/[^/]+\/releases\/download\//.test(x.browser_download_url)) continue;
+      arquivos.push({ nome: x.name.slice(0, 80), url: x.browser_download_url, tamanho: typeof x.size === "number" ? x.size : 0 });
+    }
+    if (arquivos.length === 0) continue;
+    saida.push({ tag: o.tag_name.slice(0, 40), titulo: String(o.name ?? o.tag_name).slice(0, 80), quando: String(o.published_at ?? o.created_at ?? ""), arquivos });
+    if (saida.length >= quantas) break;
+  }
+  return saida;
+}
+
+export const tamanhoLegivel = (b: number): string => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : b >= 1024 ? `${Math.round(b / 1024)} KB` : b > 0 ? `${b} B` : "");

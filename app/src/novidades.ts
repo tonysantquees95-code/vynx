@@ -9,6 +9,8 @@ export const NOVIDADES: Novidade[] = [
   { id: 2, data: "2026-11-23", tipo: "novo", titulo: "Emulador de Android", texto: "Nova aba Android: o Vynx prepara o emulador oficial, cria um celular virtual e instala os apps da suíte direto das versões do GitHub, para você testar sem instalar no telefone." },
   { id: 3, data: "2026-11-23", tipo: "novo", titulo: "Entrar com o Vetorial ID", texto: "O Vynx OS agora abre pedindo o seu Vetorial ID, o mesmo dos outros apps da Vetorial Tech. Na conta de administração, o Painel Dev já abre conectado ao GitHub, sem você colar nenhum token. Em Ajustes você vê a conta e pode sair." },
   { id: 4, data: "2026-11-23", tipo: "melhoria", titulo: "Logo novo", texto: "O Vynx OS ganhou um logo só dele: um laboratório em forma de hexágono com um Y de ramificação dentro. Ele não se parece mais com o de nenhum outro app da suíte." },
+  { id: 5, data: "2026-11-23", tipo: "melhoria", titulo: "Painel Dev só com as versões", texto: "Agora o Painel Dev mostra só os seus apps. Escolha um e veja a última versão e a anterior, com botão para baixar e, nos apps de Android, para testar direto no celular virtual." },
+  { id: 6, data: "2026-11-23", tipo: "correcao", titulo: "Celular virtual abre a janela", texto: "O celular virtual do Android agora liga com a tela de vídeo por software, para a janela aparecer em qualquer computador. Se ele fechar sozinho, o Vynx mostra o motivo em vez de ficar esperando." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };
