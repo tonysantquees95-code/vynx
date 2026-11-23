@@ -26,8 +26,11 @@
 - Demonstração (navegador e teste visual): `localStorage "vynx.demo.android"` = `{preparado, celulares, ligado, pronto}`. Mudou a interface do plugin? Ajuste `ponte.ts`.
 - Só dá para testar de verdade no Windows com virtualização ligada (WHPX/Hyper-V).
 
+## Entrada (Vetorial ID)
+- O app abre na tela `telas/Entrar.tsx` (e-mail e senha do Vetorial ID, `app: "vynx"`); sessão em `localStorage "vynx.sessao"` (`conta.ts`). Administrador: `GET /id/github` (servidor) entrega o token de LEITURA do GitHub e o Painel Dev já abre conectado. Sair (Ajustes › Conta) apaga sessão e token. Teste visual: cenário `entrar` (modo `sem-conta`).
+
 ## Painel Dev
-- Token do GitHub só em `localStorage` (`vynx.github.token`), nunca no servidor. Lógica pura e testada em `github.ts`.
+- Token do GitHub só em `localStorage` (`vynx.github.token`); nunca é ENVIADO ao servidor (o administrador só o RECEBE dele). Lógica pura e testada em `github.ts`.
 
 ## Teste visual das telas
 - `app/teste-visual/telas.mjs` + `config.mjs`: `npm run build && npm run test:visual` abre o app em 7 tamanhos e confere se cada tela e janela cabe, não estoura para o lado e todo botão dá para alcançar. Tela ou janela nova: acrescente um cenário em `config.mjs`.

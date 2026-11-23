@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BUILD, enderecoDoDownload, haNovaVersao, procurarVersao } from "../atualizacao";
 import { ponte } from "../ponte";
 import { guardarToken } from "./PainelDev";
+import type { Sessao } from "../conta";
 import { FeedbackDoApp } from "./FeedbackDoApp";
 import { Novidades } from "./Novidades";
 import { Termos, Tour } from "./Apresentacao";
@@ -10,7 +11,7 @@ import { NOVIDADES } from "../novidades";
 type Janela = null | "tour" | "termos" | "novidades" | "feedback";
 
 /** Ajustes › Sobre o Vynx OS. */
-export function Ajustes({ aoDesconectarGithub }: { aoDesconectarGithub: () => void }) {
+export function Ajustes({ aoDesconectarGithub, sessao, aoSair }: { aoDesconectarGithub: () => void; sessao: Sessao; aoSair: () => void }) {
   const [janela, setJanela] = useState<Janela>(null);
   const [msg, setMsg] = useState("");
   const [nova, setNova] = useState(false);
@@ -41,9 +42,14 @@ export function Ajustes({ aoDesconectarGithub }: { aoDesconectarGithub: () => vo
           {msg && <span role="status" className="text-sm text-suave">{msg}</span>}
         </div>
       </section>
+      <section className="space-y-2 rounded-2xl border border-borda bg-painel p-4" aria-label="Conta">
+        <h2 className="font-bold">Conta</h2>
+        <p className="text-sm text-suave">Vetorial ID: <b className="text-texto">{sessao.email}</b>{sessao.admin ? " · administrador" : ""}</p>
+        <button onClick={aoSair} className="min-h-11 rounded-xl border border-borda px-4 text-sm">Sair do Vetorial ID</button>
+      </section>
       <section className="space-y-2 rounded-2xl border border-borda bg-painel p-4" aria-label="Privacidade">
         <h2 className="font-bold">Privacidade</h2>
-        <p className="text-sm text-suave">O token do GitHub fica só neste computador.</p>
+        <p className="text-sm text-suave">O token do GitHub fica só neste computador. Ao sair do Vetorial ID ele é apagado daqui.</p>
         <button onClick={() => { guardarToken(""); aoDesconectarGithub(); }} className="min-h-11 rounded-xl border border-erro/60 px-4 text-sm text-erro">Apagar o token do GitHub</button>
       </section>
       {janela === "tour" && <div className="fixed inset-0 z-50 bg-fundo p-5"><div className="mx-auto flex h-full max-w-lg flex-col"><Tour aoTerminar={() => setJanela(null)} aoFechar={() => setJanela(null)} rotuloFinal="Fechar" /></div></div>}

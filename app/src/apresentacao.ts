@@ -1,6 +1,6 @@
 // Primeira abertura: conhecer as funções, entender as permissões e aceitar os termos.
 // Mudou o texto dos termos: suba VERSAO_DOS_TERMOS e a pessoa aceita de novo.
-export const VERSAO_DOS_TERMOS = 2;
+export const VERSAO_DOS_TERMOS = 3;
 const CHAVE_TERMOS = "vynx.termos";
 const CHAVE_TOUR = "vynx.tour";
 
@@ -18,7 +18,7 @@ export const TOUR: PassoDoTour[] = [
 export const TERMOS: { titulo: string; texto: string }[] = [
   { titulo: "1. O que é o Vynx OS", texto: "O Vynx OS é um conjunto de ferramentas para desenvolvedores da Vetorial Tech: laboratórios isolados para testar programas e um painel de acompanhamento de projetos. Nesta fase ele está em testes (beta): pode ter erros, mudar e ficar fora do ar sem aviso." },
   { titulo: "2. Laboratórios", texto: "Os laboratórios usam o WSL2 do Windows. Eles nascem sem acesso aos arquivos e programas do Windows, mas continuam sendo ambientes de teste, não uma garantia de segurança total: não rode ali código que você não pode arriscar, e mantenha o Windows e o WSL atualizados. Descartar um laboratório apaga tudo o que está dentro dele, sem volta." },
-  { titulo: "3. Seu token do GitHub", texto: "O token que você cola no Painel Dev é guardado somente neste computador e usado apenas para falar com o GitHub. Ele nunca é enviado aos servidores da Vetorial Tech. Use um token com o mínimo de permissões (somente leitura) e apague-o em Ajustes quando quiser." },
+  { titulo: "3. Seu token do GitHub", texto: "Você entra no Vynx OS com o seu Vetorial ID (e-mail e senha, enviados só ao servidor da Vetorial Tech para conferir a conta). O token do GitHub fica somente neste computador e é usado apenas para falar com o GitHub: se você colar um token, ele nunca é enviado a ninguém; se for a conta de administração da Vetorial Tech, o app recebe do servidor um token de somente leitura ao entrar. Ao sair do Vetorial ID, o token é apagado deste computador." },
   { titulo: "4. Emulador de Android", texto: "O emulador baixa, direto das fontes oficiais, um Java (Microsoft) e as ferramentas do Android (Google), que têm as próprias licenças; você aceita a licença do Android SDK antes do download. Tudo fica na sua pasta de usuário, e os apps instalados no celular virtual vêm das versões publicadas no GitHub. O emulador usa bastante memória, processador e disco (uns 10 GB)." },
   { titulo: "5. Uso responsável", texto: "Você é responsável pelo que executa nos seus laboratórios. É proibido usar o Vynx OS para atacar sistemas de terceiros, espalhar código malicioso ou qualquer atividade ilegal." },
   { titulo: "6. Privacidade", texto: "O Vynx OS não envia o conteúdo dos seus laboratórios nem dos seus repositórios para a Vetorial Tech. Só o feedback que você escolher enviar e a verificação de novas versões passam pelo nosso servidor." },

@@ -14,6 +14,7 @@ export default {
   espera: 800,
   guardado: (modo) => modo === "primeira" ? {} : {
     "vynx.tour": "1", "vynx.termos": TERMOS,
+    ...(modo === "sem-conta" ? {} : { "vynx.sessao": JSON.stringify({ token: "teste", email: "dev@exemplo.com", nome: "Dev", admin: false }) }),
     "vynx.novidades.vistas": modo === "atualizou" ? "0" : "9999",
     ...(modo === "sem-wsl" ? { "vynx.demo.wsl": semWsl } : {}),
     ...(modo === "android-pronto" ? { "vynx.demo.android": andPronto } : {}),
@@ -25,6 +26,7 @@ export default {
   cenarios: [
     ["primeira-abertura", "primeira", async () => {}],
     ["o-que-ha-de-novo", "atualizou", async (p) => { await p.getByText("O que há de novo").first().waitFor(); }],
+    ["entrar", "sem-conta", async (p) => { await p.getByRole("button", { name: "Entrar", exact: true }).waitFor(); }],
     ["inicio", "normal", async (p) => { await p.getByRole("heading", { name: "Vynx OS" }).first().waitFor(); }],
     ["laboratorio-sem-wsl", "sem-wsl", async (p, a) => { await a.aba(p, "Laboratório"); await p.getByText("O WSL2 ainda não está instalado").waitFor(); }],
     ["laboratorio-lista", "com-lab", async (p, a) => { await a.aba(p, "Laboratório"); await p.getByRole("button", { name: "Abrir terminal" }).first().waitFor(); }],

@@ -9,6 +9,8 @@ import { Laboratorio } from "./telas/Laboratorio";
 import { Android } from "./telas/Android";
 import { PainelDev } from "./telas/PainelDev";
 import { Ajustes } from "./telas/Ajustes";
+import { Entrar } from "./telas/Entrar";
+import { sair, sessaoGuardada, type Sessao } from "./conta";
 
 const ABAS: { id: Aba; rotulo: string; icone: string }[] = [
   { id: "inicio", rotulo: "Início", icone: "🏠" },
@@ -26,8 +28,10 @@ export default function App() {
   const [novidades, setNovidades] = useState(() => { const v = lerVisto(); return v !== null && v < ultimoId() ? novasDesde(v, NOVIDADES) : []; });
   const [aba, setAba] = useState<Aba>("inicio");
   const [github, setGithub] = useState(temToken);
+  const [sessao, setSessao] = useState<Sessao | null>(sessaoGuardada);
 
   if (apresentar) return <Apresentacao aoConcluir={() => setApresentar(false)} />;
+  if (!sessao) return <Entrar aoEntrar={(s) => { setSessao(s); setGithub(temToken()); }} />;
   if (novidades.length) return <Novidades itens={novidades} aoFechar={() => setNovidades([])} />;
 
   return (
@@ -47,7 +51,7 @@ export default function App() {
           {aba === "laboratorio" && <Laboratorio />}
           {aba === "android" && <Android />}
           {aba === "painel" && <PainelDev aoMudarConexao={() => setGithub(temToken())} />}
-          {aba === "ajustes" && <Ajustes aoDesconectarGithub={() => setGithub(false)} />}
+          {aba === "ajustes" && <Ajustes aoDesconectarGithub={() => setGithub(false)} sessao={sessao} aoSair={() => { void sair().then(() => { setSessao(null); setGithub(false); setAba("inicio"); }); }} />}
         </div>
       </main>
     </div>
