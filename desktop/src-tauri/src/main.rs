@@ -156,7 +156,7 @@ async fn importar_projetos(nome: String, token: String) -> Result<String, String
     tauri::async_runtime::spawn_blocking(move || {
         use std::io::Write;
         let mut c = Command::new("wsl.exe");
-        c.args(["-d", &completo, "-u", "root", "--", "bash", "-c", "read -r GH_TOKEN; export GH_TOKEN; exec bash -s"]);
+        c.args(["-d", &completo, "-u", "root", "--", "bash", "-c", "read -r GH_TOKEN; export GH_TOKEN; cat > /tmp/vynx-importar.sh; bash /tmp/vynx-importar.sh < /dev/null; R=$?; rm -f /tmp/vynx-importar.sh; exit $R"]);
         c.stdin(std::process::Stdio::piped()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
         #[cfg(windows)]
         { use std::os::windows::process::CommandExt; c.creation_flags(0x0800_0000); }
