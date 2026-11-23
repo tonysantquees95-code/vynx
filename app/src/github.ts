@@ -81,7 +81,7 @@ export const APPS_DO_PAINEL: AppDoPainel[] = [
   { id: "vynx", nome: "Vynx OS", repo: "tonysantquees95-code/vynx", plataforma: "Windows" },
 ];
 
-export interface Arquivo { nome: string; url: string; tamanho: number }
+export interface Arquivo { nome: string; url: string; api: string; tamanho: number }
 export interface Versao { tag: string; titulo: string; quando: string; arquivos: Arquivo[] }
 
 /** Releases do GitHub → as duas versões mais novas que têm arquivo para baixar (a última e a anterior). Rascunhos ficam de fora. */
@@ -98,7 +98,7 @@ export function lerVersoes(dados: unknown, quantas = 2): Versao[] {
       const x = a as Record<string, unknown>;
       if (typeof x.name !== "string" || typeof x.browser_download_url !== "string") continue;
       if (!/^https:\/\/github\.com\/tonysantquees95-code\/[^/]+\/releases\/download\//.test(x.browser_download_url)) continue;
-      arquivos.push({ nome: x.name.slice(0, 80), url: x.browser_download_url, tamanho: typeof x.size === "number" ? x.size : 0 });
+      arquivos.push({ nome: x.name.slice(0, 80), url: x.browser_download_url, api: typeof x.url === "string" ? x.url : "", tamanho: typeof x.size === "number" ? x.size : 0 });
     }
     if (arquivos.length === 0) continue;
     saida.push({ tag: o.tag_name.slice(0, 40), titulo: String(o.name ?? o.tag_name).slice(0, 80), quando: String(o.published_at ?? o.created_at ?? ""), arquivos });

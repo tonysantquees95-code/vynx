@@ -20,7 +20,7 @@ export interface Ponte {
   androidCriar(perfil: PerfilId): Promise<string>;
   androidLigar(nome: string): Promise<void>;
   androidDesligar(): Promise<void>;
-  androidInstalar(url: string, pacote: string): Promise<void>;
+  androidInstalar(url: string, pacote: string, token?: string): Promise<void>;
   androidCaptura(): Promise<string>;
 }
 
@@ -38,7 +38,7 @@ const real: Ponte = {
   androidCriar: (perfil) => invoke<string>("android_criar", { perfil }),
   androidLigar: (nome) => invoke("android_ligar", { nome }),
   androidDesligar: () => invoke("android_desligar"),
-  androidInstalar: (url, pacote) => invoke("android_instalar", { url, pacote }),
+  androidInstalar: (url, pacote, token) => invoke("android_instalar", { url, pacote, token: token ?? null }),
   androidCaptura: () => invoke<string>("android_captura"),
 };
 

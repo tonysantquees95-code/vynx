@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { APPS_ANDROID, PERFIS, RAM_E_DISCO, nomeDoCelular, passoAtual, rotuloDoCelular, urlDoApk, type AppAndroid, type EstadoAndroid, type PerfilId, type ProgressoAndroid } from "../android";
+import { APPS_ANDROID, PERFIS, RAM_E_DISCO, nomeDoCelular, passoAtual, rotuloDoCelular, urlDaApi, urlDoApk, type AppAndroid, type AssetDaRelease, type EstadoAndroid, type PerfilId, type ProgressoAndroid } from "../android";
 import { API_GITHUB } from "../github";
 import { ponte } from "../ponte";
 
@@ -50,11 +50,13 @@ export function Android() {
     setErro(""); setAviso("");
     try {
       const token = (() => { try { return localStorage.getItem("vynx.github.token") ?? ""; } catch { return ""; } })();
-      const r = await fetch(`${API_GITHUB}/repos/${a.repo}/releases/latest`, { headers: { Accept: "application/vnd.github+json", ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
-      if (!r.ok) throw new Error(`Não achei a versão mais nova do ${a.nome} no GitHub (erro ${r.status}).`);
-      const url = urlDoApk((await r.json()).assets, a.apk);
+      const r = await fetch(`${API_GITHUB}/repos/${a.repo}/releases?per_page=20`, { headers: { Accept: "application/vnd.github+json", ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+      if (!r.ok) throw new Error(a.privado && !token ? `Conecte o GitHub no Painel Dev para testar a ${a.nome}.` : `Não achei a versão mais nova do ${a.nome} no GitHub (erro ${r.status}).`);
+      const lista = (await r.json()) as { draft?: boolean; assets?: AssetDaRelease[] }[];
+      const rel = lista.find((x) => !x.draft && (x.assets ?? []).some((y) => y.name.toLowerCase() === a.apk.toLowerCase()));
+      const url = rel ? (a.privado ? urlDaApi(rel.assets, a.apk) : urlDoApk(rel.assets, a.apk)) : null;
       if (!url) throw new Error(`A versão mais nova do ${a.nome} não tem o arquivo ${a.apk}.`);
-      await iniciarTarefa(() => ponte.androidInstalar(url, a.pacote));
+      await iniciarTarefa(() => ponte.androidInstalar(url, a.pacote, a.privado ? token : undefined));
     } catch (x) { setErro(x instanceof Error ? x.message : String(x)); }
   };
 

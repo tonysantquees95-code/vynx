@@ -38,7 +38,7 @@ fn etapa(t: &str) { atualizar(|p| { p.etapa = t.into(); p.detalhe.clear(); }); }
 
 // ---------- validações (puras) ----------
 pub fn nome_avd_valido(n: &str) -> bool { !n.is_empty() && n.len() <= 40 && n.starts_with("vynx-") && n.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') }
-pub fn pacote_valido(p: &str) -> bool { p.len() <= 60 && p.strip_prefix("tech.vetorial.").map(|r| !r.is_empty() && r.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())).unwrap_or(false) }
+pub fn pacote_valido(p: &str) -> bool { p == "com.tonimarques.sextafeira" || p.len() <= 60 && p.strip_prefix("tech.vetorial.").map(|r| !r.is_empty() && r.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit())).unwrap_or(false) }
 /// Só aceita APK de releases dos repositórios da conta (o download segue o redirecionamento do GitHub).
 pub fn url_apk_valida(u: &str) -> bool {
     u.starts_with("https://github.com/tonysantquees95-code/") && u.contains("/releases/download/") && u.ends_with(".apk")
@@ -241,15 +241,33 @@ pub fn desligar() -> Result<(), String> {
     if e.status.success() { Ok(()) } else { Err("Não consegui desligar o emulador".into()) }
 }
 
+/// APK de repositório privado (a Vênus): endereço da API do GitHub para um arquivo de release da conta, que só baixa com o token.
+pub fn url_asset_valida(u: &str) -> bool {
+    u.strip_prefix("https://api.github.com/repos/tonysantquees95-code/").and_then(|r| r.split_once("/releases/assets/"))
+        .map(|(repo, id)| !repo.is_empty() && repo.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')) && !id.is_empty() && id.chars().all(|c| c.is_ascii_digit()))
+        .unwrap_or(false)
+}
+fn token_valido(t: &str) -> bool { t.len() >= 20 && t.len() <= 255 && t.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') }
+
 /// Baixa o APK da release, instala no emulador ligado e abre o app.
-pub fn instalar(url: &str, pacote: &str) -> Result<(), String> {
-    if !url_apk_valida(url) { return Err("Endereço de APK não aceito".into()); }
+pub fn instalar(url: &str, pacote: &str, token: Option<&str>) -> Result<(), String> {
+    let privado = url_asset_valida(url);
+    if !privado && !url_apk_valida(url) { return Err("Endereço de APK não aceito".into()); }
+    if privado && !token.map(token_valido).unwrap_or(false) { return Err("Para baixar esse app, conecte o GitHub no Painel Dev.".into()); }
     if !pacote_valido(pacote) { return Err("Pacote inválido".into()); }
     let p = pastas()?;
     if !p.adb().exists() { return Err("Prepare o emulador primeiro".into()); }
     etapa("Baixando o APK…");
     let apk = p.baixados.join(format!("{pacote}.apk"));
-    baixar(url, &apk, "Não consegui baixar o APK")?;
+    if privado {
+        // o token vai pela entrada padrão do curl (nunca na linha de comando); o curl não repassa o cabeçalho ao endereço assinado para onde o GitHub redireciona
+        let mut c = Command::new("curl.exe");
+        c.args(["-L", "--fail", "--silent", "--show-error", "--retry", "3", "-K", "-", "-o"]).arg(&apk).arg(url);
+        let cfg = format!("header = \"Authorization: Bearer {}\"\nheader = \"Accept: application/octet-stream\"\n", token.unwrap_or(""));
+        rodar(&mut c, Some(&cfg), "Não consegui baixar o APK (confira se o token tem acesso ao repositório)")?;
+    } else {
+        baixar(url, &apk, "Não consegui baixar o APK")?;
+    }
     etapa("Esperando o emulador ficar pronto…");
     let mut pronto = false;
     for _ in 0..90 {
@@ -294,6 +312,15 @@ mod testes {
         assert!(!url_apk_valida("https://github.com/outro/voxix/releases/download/1.9/Voxix.apk"));
         assert!(!url_apk_valida("https://github.com/tonysantquees95-code/voxix/releases/download/1.9/Voxix.exe"));
         assert!(!url_apk_valida("https://github.com/tonysantquees95-code/voxix/releases/download/1.9/a b.apk"));
+    }
+    #[test] fn apk_privado() {
+        assert!(url_asset_valida("https://api.github.com/repos/tonysantquees95-code/Venus-core/releases/assets/123456"));
+        assert!(!url_asset_valida("https://api.github.com/repos/outro/Venus-core/releases/assets/123456"));
+        assert!(!url_asset_valida("https://api.github.com/repos/tonysantquees95-code/Venus-core/releases/assets/12a"));
+        assert!(!url_asset_valida("https://evil.com/repos/tonysantquees95-code/x/releases/assets/1"));
+        assert!(!url_asset_valida("https://api.github.com/repos/tonysantquees95-code/a b/releases/assets/1"));
+        assert!(pacote_valido("com.tonimarques.sextafeira") && !pacote_valido("com.tonimarques.outro"));
+        assert!(token_valido("ghp_abcdefghijklmnopqrstuvwxyz0123") && !token_valido("curto") && !token_valido("ghp_abcdefghijklmnopqrst\"uvwxyz"));
     }
     #[test] fn adb_devices() {
         let t = "List of devices attached\r\nemulator-5554\tdevice\r\nemulator-5556\toffline\r\nABC123\tdevice\r\n\r\n";

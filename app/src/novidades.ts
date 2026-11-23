@@ -16,6 +16,7 @@ export const NOVIDADES: Novidade[] = [
   { id: 9, data: "2026-11-23", tipo: "novo", titulo: "Importar projetos", texto: "Em Laboratório, o botão Importar projetos traz todos os seus repositórios do GitHub para dentro do Linux e prepara um resumo de cada um. No Claude, digite /projetos para ele saber onde cada projeto parou." },
   { id: 10, data: "2026-11-23", tipo: "novo", titulo: "Laboratório principal", texto: "Em Laboratório, o botão Criar laboratório principal monta o seu lugar de trabalho: um Linux com os projetos do GitHub já importados e o Claude instalado. Ele avisa antes de ser descartado." },
   { id: 11, data: "2026-11-23", tipo: "correcao", titulo: "Painel Dev não abre mais APK no navegador", texto: "Arquivos APK (de celular) não têm mais o botão Baixar, que abria o navegador e o Windows não sabia o que fazer. Nos apps de Android use Testar no celular virtual." },
+  { id: 12, data: "2026-11-23", tipo: "novo", titulo: "Testar a Vênus no celular virtual", texto: "A Vênus agora aparece na aba Android e no Painel Dev. O Vynx baixa o APK dela com a sua conta do GitHub e instala no celular virtual para você testar." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

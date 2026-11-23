@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { API_GITHUB, APPS_DO_PAINEL, lerVersoes, tamanhoLegivel, tempoRelativo, tokenValido, type AppDoPainel, type Versao } from "../github";
+import { API_GITHUB, APPS_DO_PAINEL, lerVersoes, tamanhoLegivel, tempoRelativo, tokenValido, type AppDoPainel, type Arquivo, type Versao } from "../github";
 import { APPS_ANDROID } from "../android";
 import { ponte } from "../ponte";
 
@@ -33,14 +33,15 @@ export function PainelDev({ aoMudarConexao }: { aoMudarConexao?: () => void }) {
   }, []);
   useEffect(() => { if (token && aberto) void carregar(aberto, token); }, [token, aberto, carregar]);
 
-  const testarNoCelular = async (app: AppDoPainel, url: string) => {
+  const testarNoCelular = async (app: AppDoPainel, f: Arquivo) => {
     const a = APPS_ANDROID.find((x) => x.id === app.id);
     if (!a) return;
-    setErro(""); setAviso(""); setOcupado(url);
+    setErro(""); setAviso(""); setOcupado(f.url);
     try {
       const e = await ponte.androidEstado();
       if (!e.pronto) throw new Error("Ligue um celular virtual na aba Android primeiro e espere a tela do Android aparecer.");
-      await ponte.androidInstalar(url, a.pacote);
+      if (a.privado && !f.api) throw new Error("Não achei o endereço seguro desse arquivo.");
+      await ponte.androidInstalar(a.privado ? f.api : f.url, a.pacote, a.privado ? token : undefined);
       setAviso(`Instalando o ${app.nome} no celular virtual. Acompanhe na aba Android.`);
     } catch (x) { setErro(x instanceof Error ? x.message : String(x)); } finally { setOcupado(""); }
   };
@@ -98,7 +99,7 @@ export function PainelDev({ aoMudarConexao }: { aoMudarConexao?: () => void }) {
                         return (
                           <li key={f.url} className="flex flex-wrap items-center gap-2">
                             <span className="min-w-0 flex-1 truncate text-sm">{f.nome} <span className="text-xs text-suave">{tamanhoLegivel(f.tamanho)}</span></span>
-                            {apk && <button onClick={() => void testarNoCelular(aberto, f.url)} disabled={!!ocupado} className="min-h-10 rounded-lg border border-neon px-3 text-xs font-bold text-neon disabled:opacity-40">Testar no celular virtual</button>}
+                            {apk && <button onClick={() => void testarNoCelular(aberto, f)} disabled={!!ocupado} className="min-h-10 rounded-lg border border-neon px-3 text-xs font-bold text-neon disabled:opacity-40">Testar no celular virtual</button>}
                             {/\.apk$/i.test(f.nome)
                               ? (!apk && <span className="text-xs text-suave">APK é para celular Android</span>)
                               : <button onClick={() => void ponte.abrirLink(f.url)} className="min-h-10 rounded-lg border border-borda px-3 text-xs">Baixar</button>}

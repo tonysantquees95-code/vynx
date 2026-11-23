@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { APPS_ANDROID, PERFIS, nomeDoCelular, passoAtual, resumo, rotuloDoCelular, urlDoApk } from "../src/android.ts";
+import { APPS_ANDROID, PERFIS, nomeDoCelular, passoAtual, resumo, rotuloDoCelular, urlDaApi, urlDoApk } from "../src/android.ts";
 
 const base = { jdk: true, ferramentas: true, emulador: true, imagem: true, preparado: true, celulares: [], ligado: null, pronto: false, aceleracao: true };
 
@@ -29,10 +29,19 @@ test("apps: pacote tech.vetorial.*, repositório da conta e APK .apk, sem repeti
   const ids = APPS_ANDROID.map((a) => a.id);
   assert.equal(new Set(ids).size, ids.length);
   for (const a of APPS_ANDROID) {
-    assert.match(a.pacote, /^tech\.vetorial\.[a-z0-9]+$/);
+    // a Vênus (privada) é a única com outro pacote, e só ela baixa pela API com o token
+    if (a.id === "venus") { assert.equal(a.pacote, "com.tonimarques.sextafeira"); assert.equal(a.privado, true); }
+    else { assert.match(a.pacote, /^tech\.vetorial\.[a-z0-9]+$/); assert.ok(!a.privado); }
     assert.match(a.repo, /^tonysantquees95-code\/[A-Za-z0-9_.-]+$/);
     assert.match(a.apk, /\.apk$/);
   }
+});
+
+test("urlDaApi só aceita endereço da API de release da conta", () => {
+  const ok = [{ name: "Venus.apk", browser_download_url: "x", url: "https://api.github.com/repos/tonysantquees95-code/Venus-core/releases/assets/99" }];
+  assert.equal(urlDaApi(ok, "Venus.apk"), ok[0].url);
+  assert.equal(urlDaApi([{ name: "Venus.apk", browser_download_url: "x", url: "https://evil.com/repos/tonysantquees95-code/V/releases/assets/9" }], "Venus.apk"), null);
+  assert.equal(urlDaApi(ok, "Outro.apk"), null);
 });
 
 test("urlDoApk só aceita o arquivo esperado, vindo de release da conta", () => {

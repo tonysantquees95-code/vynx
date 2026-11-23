@@ -14,9 +14,10 @@ export type PerfilId = (typeof PERFIS)[number]["id"];
 export const nomeDoCelular = (perfil: PerfilId): string => `vynx-${perfil}`;
 export const rotuloDoCelular = (nome: string): string => PERFIS.find((p) => nomeDoCelular(p.id) === nome)?.rotulo ?? nome;
 
-/** Apps da suíte que têm APK nas releases do GitHub (a Vênus é privada e fica de fora). */
-export interface AppAndroid { id: string; nome: string; repo: string; apk: string; pacote: string }
+/** Apps da suíte que têm APK nas releases do GitHub (a Vênus é privada: baixa pela API com o token). */
+export interface AppAndroid { id: string; nome: string; repo: string; apk: string; pacote: string; privado?: true }
 export const APPS_ANDROID: AppAndroid[] = [
+  { id: "venus", nome: "Vênus", repo: "tonysantquees95-code/Venus-core", apk: "Venus.apk", pacote: "com.tonimarques.sextafeira", privado: true },
   { id: "vindex", nome: "Vindex", repo: "tonysantquees95-code/Vindex-", apk: "Vindex.apk", pacote: "tech.vetorial.vindex" },
   { id: "vortex", nome: "Vortex", repo: "tonysantquees95-code/Vortex", apk: "Vortex.apk", pacote: "tech.vetorial.vortex" },
   { id: "voxix", nome: "Voxix", repo: "tonysantquees95-code/voxix", apk: "Voxix.apk", pacote: "tech.vetorial.voxix" },
@@ -27,7 +28,7 @@ export const APPS_ANDROID: AppAndroid[] = [
   { id: "vetogoshi", nome: "Vetogoshi", repo: "tonysantquees95-code/vetogoshi", apk: "Vetogoshi.apk", pacote: "tech.vetorial.vetogoshi" },
 ];
 
-export interface AssetDaRelease { name: string; browser_download_url: string }
+export interface AssetDaRelease { name: string; browser_download_url: string; url?: string }
 /** Endereço do APK dentro de uma release do GitHub (null se a release não tem o arquivo esperado). */
 export function urlDoApk(assets: AssetDaRelease[] | undefined, apk: string): string | null {
   const a = (assets ?? []).find((x) => x.name.toLowerCase() === apk.toLowerCase());
@@ -52,4 +53,10 @@ export function resumo(e: EstadoAndroid | null): string {
     case "ligar": return `${e.celulares.length} ${e.celulares.length === 1 ? "celular virtual" : "celulares virtuais"}, desligado.`;
     default: return e.pronto ? "Celular virtual ligado. Instale um app para testar." : "Celular virtual ligando…";
   }
+}
+
+/** Endereço do APK pela API do GitHub (serve para repositório privado, com o token). */
+export function urlDaApi(assets: AssetDaRelease[] | undefined, apk: string): string | null {
+  const a = (assets ?? []).find((x) => x.name.toLowerCase() === apk.toLowerCase());
+  return a?.url && /^https:\/\/api\.github\.com\/repos\/tonysantquees95-code\/[\w.-]+\/releases\/assets\/\d+$/.test(a.url) ? a.url : null;
 }

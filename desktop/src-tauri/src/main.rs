@@ -199,8 +199,8 @@ async fn android_desligar() -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(android::desligar).await.map_err(|e| e.to_string())?
 }
 #[tauri::command]
-fn android_instalar(url: String, pacote: String) -> Result<(), String> {
-    android::tarefa("instalar", move || android::instalar(&url, &pacote))
+fn android_instalar(url: String, pacote: String, token: Option<String>) -> Result<(), String> {
+    android::tarefa("instalar", move || android::instalar(&url, &pacote, token.as_deref()))
 }
 #[tauri::command]
 async fn android_captura() -> Result<String, String> {
