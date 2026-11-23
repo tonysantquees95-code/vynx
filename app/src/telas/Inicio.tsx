@@ -3,7 +3,7 @@ import { laboratorios, type EstadoWsl } from "../laboratorio";
 import { ponte } from "../ponte";
 import { resumo, type EstadoAndroid } from "../android";
 
-export type Aba = "inicio" | "laboratorio" | "android" | "painel" | "ajustes";
+export type Aba = "inicio" | "laboratorio" | "android" | "painel" | "documentos" | "ajustes";
 
 /** Início: resumo do ambiente e atalhos. */
 export function Inicio({ ir, githubConectado }: { ir: (a: Aba) => void; githubConectado: boolean }) {
@@ -32,10 +32,15 @@ export function Inicio({ ir, githubConectado }: { ir: (a: Aba) => void; githubCo
           <b className="mt-2 block text-lg">Painel Dev</b>
           <span className="text-sm text-suave">{githubConectado ? "GitHub conectado: veja repositórios e builds." : "Conecte o GitHub para ver repositórios e builds."}</span>
         </button>
+        <button onClick={() => ir("documentos")} className={cartao}>
+          <span className="text-3xl" aria-hidden>📄</span>
+          <b className="mt-2 block text-lg">Documentos</b>
+          <span className="text-sm text-suave">Vindex: PDF, Word e Excel numa janela do Vynx.</span>
+        </button>
       </div>
       <section className="rounded-2xl border border-dashed border-borda p-5" aria-label="Em breve">
         <h2 className="font-bold">Chegando</h2>
-        <ul className="mt-2 grid gap-1 text-sm text-suave sm:grid-cols-2"><li>• Vindex e Velox integrados</li><li>• Atualizador de drivers</li><li>• Vetorial Office</li><li>• Vynx OS em ISO (instalar como sistema)</li></ul>
+        <ul className="mt-2 grid gap-1 text-sm text-suave sm:grid-cols-2"><li>• Velox (janela de navegador)</li><li>• Claude dentro do laboratório</li><li>• Atualizador de drivers</li><li>• Vetorial Office</li><li>• Vynx OS em ISO (instalar como sistema)</li></ul>
       </section>
     </div>
   );

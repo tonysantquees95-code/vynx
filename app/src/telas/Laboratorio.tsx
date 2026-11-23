@@ -60,6 +60,7 @@ export function Laboratorio() {
               <span className={`size-2.5 rounded-full ${l.estado === "Running" ? "bg-ok" : "bg-suave"}`} aria-hidden />
               <div className="min-w-0 flex-1"><b className="block truncate">{l.nome}</b><span className="text-xs text-suave">{l.estado === "Running" ? "ligado" : "desligado"} · isolado</span></div>
               <button onClick={() => void executar("Abrindo o terminal", () => ponte.abrirTerminal(l.nome))} disabled={!!ocupado} className="min-h-11 rounded-xl border border-neon px-4 font-bold text-neon disabled:opacity-40">Abrir terminal</button>
+              <button onClick={() => void executar("Instalando o Claude", () => ponte.instalarClaude(l.nome))} disabled={!!ocupado} className="min-h-11 rounded-xl border border-borda px-4 font-bold disabled:opacity-40">Instalar Claude</button>
               <button onClick={() => setDescartar(l.nome)} disabled={!!ocupado} className="min-h-11 rounded-xl border border-erro/60 px-4 font-bold text-erro disabled:opacity-40">Descartar</button>
             </li>
           ))}

@@ -7,6 +7,7 @@ import { Novidades } from "./telas/Novidades";
 import { Inicio, type Aba } from "./telas/Inicio";
 import { Laboratorio } from "./telas/Laboratorio";
 import { Android } from "./telas/Android";
+import { Documentos } from "./telas/Documentos";
 import { PainelDev } from "./telas/PainelDev";
 import { Ajustes } from "./telas/Ajustes";
 import { Entrar } from "./telas/Entrar";
@@ -17,6 +18,7 @@ const ABAS: { id: Aba; rotulo: string; icone: string }[] = [
   { id: "laboratorio", rotulo: "Laboratório", icone: "🧪" },
   { id: "android", rotulo: "Android", icone: "📱" },
   { id: "painel", rotulo: "Painel Dev", icone: "🛰️" },
+  { id: "documentos", rotulo: "Documentos", icone: "📄" },
   { id: "ajustes", rotulo: "Ajustes", icone: "⚙️" },
 ];
 
@@ -40,8 +42,8 @@ export default function App() {
         <div className="hidden items-center gap-2 px-2 pb-3 pt-2 md:flex"><Logo tam={30} /><b className="text-lg">Vynx OS</b></div>
         {ABAS.map((a) => (
           <button key={a.id} onClick={() => setAba(a.id)} aria-current={aba === a.id ? "page" : undefined}
-            className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-2 text-xs md:min-h-12 md:flex-none md:flex-row md:justify-start md:gap-3 md:rounded-xl md:px-3 md:text-sm ${aba === a.id ? "text-neon md:bg-neon/10" : "text-suave"}`}>
-            <span aria-hidden className="text-lg md:text-base">{a.icone}</span>{a.rotulo}
+            className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 text-[11px] md:min-h-12 md:flex-none md:flex-row md:justify-start md:gap-3 md:rounded-xl md:px-3 md:text-sm ${aba === a.id ? "text-neon md:bg-neon/10" : "text-suave"}`}>
+            <span aria-hidden className="text-lg md:text-base">{a.icone}</span><span className="max-w-full truncate">{a.rotulo}</span>
           </button>
         ))}
       </nav>
@@ -51,6 +53,7 @@ export default function App() {
           {aba === "laboratorio" && <Laboratorio />}
           {aba === "android" && <Android />}
           {aba === "painel" && <PainelDev aoMudarConexao={() => setGithub(temToken())} />}
+          {aba === "documentos" && <Documentos />}
           {aba === "ajustes" && <Ajustes aoDesconectarGithub={() => setGithub(false)} sessao={sessao} aoSair={() => { void sair().then(() => { setSessao(null); setGithub(false); setAba("inicio"); }); }} />}
         </div>
       </main>

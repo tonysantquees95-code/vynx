@@ -36,6 +36,7 @@ export default {
     ["android-ligar", "android-desligado", async (p, a) => { await a.aba(p, "Android"); await p.getByRole("button", { name: "Ligar" }).first().waitFor(); }],
     ["android-instalar", "android-pronto", async (p, a) => { await a.aba(p, "Android"); await p.getByRole("heading", { name: "Instalar um app" }).waitFor(); await p.getByRole("button", { name: "Instalar e abrir" }).first().waitFor(); }],
     ["painel-dev", "normal", async (p, a) => { await a.aba(p, "Painel Dev"); await p.getByRole("heading", { name: "Conectar ao GitHub" }).waitFor(); }],
+    ["documentos", "normal", async (p, a) => { await a.aba(p, "Documentos"); await p.getByRole("heading", { name: "Documentos" }).waitFor(); await p.locator("iframe[title=\"Vindex Documentos\"]").waitFor(); }],
     ["ajustes", "normal", async (p, a) => { await a.aba(p, "Ajustes"); await p.getByRole("heading", { name: "Ajustes" }).waitFor(); }],
     ["feedback", "normal", async (p, a) => { await a.aba(p, "Ajustes"); await p.getByRole("button", { name: "Enviar feedback" }).click(); await p.getByText(/^FEEDBACK/).waitFor(); await p.waitForTimeout(300); }],
   ],

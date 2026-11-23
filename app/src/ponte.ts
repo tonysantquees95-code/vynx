@@ -10,6 +10,7 @@ export interface Ponte {
   criarLaboratorio(base: string, nome: string): Promise<void>;
   descartarLaboratorio(nome: string): Promise<void>;
   abrirTerminal(nome: string): Promise<void>;
+  instalarClaude(nome: string): Promise<void>;
   abrirLink(url: string): Promise<void>;
   // Emulador de Android
   androidEstado(): Promise<EstadoAndroid>;
@@ -27,6 +28,7 @@ const real: Ponte = {
   criarLaboratorio: (base, nome) => invoke("criar_laboratorio", { base, nome }),
   descartarLaboratorio: (nome) => invoke("descartar_laboratorio", { nome }),
   abrirTerminal: (nome) => invoke("abrir_terminal", { nome }),
+  instalarClaude: (nome) => invoke("instalar_claude", { nome }),
   abrirLink: (url) => invoke("abrir_link", { url }),
   androidEstado: () => invoke<EstadoAndroid>("android_estado"),
   androidProgresso: () => invoke<ProgressoAndroid>("android_progresso"),
@@ -66,6 +68,7 @@ function demo(): Ponte {
     criarLaboratorio: async (_b, nome) => { await espera(600); distros = [...distros, { nome: PREFIXO + nome, estado: "Stopped", versao: 2 }]; },
     descartarLaboratorio: async (nome) => { await espera(300); distros = distros.filter((d) => d.nome !== PREFIXO + nome); },
     abrirTerminal: async () => { /* só no Windows */ },
+    instalarClaude: async () => { /* só no Windows */ },
     abrirLink: async (url) => { window.open(url, "_blank", "noopener"); },
   };
 }

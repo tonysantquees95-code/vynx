@@ -132,6 +132,17 @@ fn abrir_terminal(nome: String) -> Result<(), String> {
     Command::new("cmd").args(["/C", "start", "", "wsl.exe", "-d", &completo]).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// Instala o Claude Code dentro do laboratório (numa janela de terminal, para a pessoa ver o andamento).
+/// O texto é fixo e sem caracteres especiais do cmd (nada de & | < > ^ aspas), só o nome do laboratório vem de fora e é validado.
+const INSTALAR_CLAUDE: &str = "set -e; apt-get update -y; apt-get install -y curl ca-certificates nodejs npm git; npm install -g @anthropic-ai/claude-code; echo; echo Pronto. Agora digite claude e entre com a sua conta; exec bash -l";
+
+#[tauri::command]
+fn instalar_claude(nome: String) -> Result<(), String> {
+    if !nome_valido(&nome) { return Err("Nome inválido".into()); }
+    let completo = format!("{PREFIXO}{nome}");
+    Command::new("cmd").args(["/C", "start", "", "wsl.exe", "-d", &completo, "-u", "root", "--", "bash", "-lc", INSTALAR_CLAUDE]).spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn abrir_link(url: String) -> Result<(), String> {
     if !url.starts_with("https://") || url.chars().any(|c| c.is_whitespace() || matches!(c, '"' | '^' | '&' | '|' | '<' | '>')) { return Err("Só abro links https".into()); }
@@ -173,13 +184,19 @@ async fn android_captura() -> Result<String, String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura])
+        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura])
         .run(tauri::generate_context!())
         .expect("erro ao abrir o Vynx OS");
 }
 
 #[cfg(test)]
 mod testes {
+    #[test]
+    fn texto_do_claude_nao_tem_caractere_especial_do_cmd() {
+        assert!(!super::INSTALAR_CLAUDE.chars().any(|c| matches!(c, '&' | '|' | '<' | '>' | '^' | '"' | '%')));
+        assert!(super::INSTALAR_CLAUDE.contains("@anthropic-ai/claude-code"));
+    }
+
     use super::*;
     #[test] fn nomes() {
         assert!(nome_valido("teste-1") && !nome_valido("Teste") && !nome_valido("a b") && !nome_valido("-x") && !nome_valido(""));
