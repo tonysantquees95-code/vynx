@@ -11,6 +11,7 @@ export function Laboratorio() {
   const [nome, setNome] = useState("");
   const [base, setBase] = useState("");
   const [descartar, setDescartar] = useState<string | null>(null);
+  const [aviso, setAviso] = useState("");
 
   const ler = useCallback(async () => {
     try { const e = await ponte.estadoWsl(); setEstado(e); setErro(""); setBase((b) => b || bases(e.distros)[0]?.nome || ""); }
@@ -21,6 +22,13 @@ export function Laboratorio() {
   const executar = async (rotulo: string, f: () => Promise<void>) => {
     setOcupado(rotulo); setErro("");
     try { await f(); await ler(); } catch (e) { setErro(String(e)); } finally { setOcupado(""); }
+  };
+
+  const importar = async (lab: string) => {
+    setAviso("");
+    const token = (() => { try { return localStorage.getItem("vynx.github.token") ?? ""; } catch { return ""; } })();
+    if (!token) { setErro("Conecte o GitHub no Painel Dev antes de importar os projetos."); return; }
+    await executar("Importando os projetos", async () => { setAviso(await ponte.importarProjetos(lab, token)); });
   };
 
   if (!estado) return <p className="text-suave">Procurando o WSL…</p>;
@@ -50,6 +58,7 @@ export function Laboratorio() {
         <button onClick={() => setCriando(true)} disabled={!!ocupado} className="min-h-11 rounded-xl bg-neon px-5 font-extrabold text-fundo disabled:opacity-40">+ Criar laboratório</button>
       </div>
       {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
+      {aviso && <p role="status" className="rounded-xl border border-neon/40 bg-painel p-3 text-sm text-neon">{aviso}</p>}
       {ocupado && <p role="status" className="rounded-xl border border-borda bg-painel p-3 text-sm text-suave">{ocupado}… isso pode levar alguns minutos.</p>}
       {labs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-borda p-8 text-center text-suave"><p className="text-4xl" aria-hidden>🧪</p><p className="mt-2">Nenhum laboratório ainda. Crie o primeiro para testar um programa sem risco.</p></div>
@@ -61,6 +70,7 @@ export function Laboratorio() {
               <div className="min-w-0 flex-1"><b className="block truncate">{l.nome}</b><span className="text-xs text-suave">{l.estado === "Running" ? "ligado" : "desligado"} · isolado</span></div>
               <button onClick={() => void executar("Abrindo o terminal", () => ponte.abrirTerminal(l.nome))} disabled={!!ocupado} className="min-h-11 rounded-xl border border-neon px-4 font-bold text-neon disabled:opacity-40">Abrir terminal</button>
               <button onClick={() => void executar("Instalando o Claude", () => ponte.instalarClaude(l.nome))} disabled={!!ocupado} className="min-h-11 rounded-xl border border-borda px-4 font-bold disabled:opacity-40">Instalar Claude</button>
+              <button onClick={() => void importar(l.nome)} disabled={!!ocupado} className="min-h-11 rounded-xl border border-borda px-4 font-bold disabled:opacity-40">Importar projetos</button>
               <button onClick={() => setDescartar(l.nome)} disabled={!!ocupado} className="min-h-11 rounded-xl border border-erro/60 px-4 font-bold text-erro disabled:opacity-40">Descartar</button>
             </li>
           ))}

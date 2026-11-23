@@ -13,6 +13,7 @@ export const NOVIDADES: Novidade[] = [
   { id: 6, data: "2026-11-23", tipo: "correcao", titulo: "Celular virtual abre a janela", texto: "O celular virtual do Android agora liga com a tela de vídeo por software, para a janela aparecer em qualquer computador. Se ele fechar sozinho, o Vynx mostra o motivo em vez de ficar esperando." },
   { id: 7, data: "2026-11-23", tipo: "novo", titulo: "Documentos dentro do Vynx", texto: "Nova área Documentos: o Vindex abre numa janela do Vynx para juntar, dividir, converter e editar PDF e arquivos de escritório. Os arquivos ficam no seu computador." },
   { id: 8, data: "2026-11-23", tipo: "novo", titulo: "Claude dentro do laboratório", texto: "Em Laboratório, o botão Instalar Claude prepara o Claude no seu Linux isolado. Depois é só abrir o terminal, digitar claude e entrar com a sua conta para programar de lá." },
+  { id: 9, data: "2026-11-23", tipo: "novo", titulo: "Importar projetos", texto: "Em Laboratório, o botão Importar projetos traz todos os seus repositórios do GitHub para dentro do Linux e prepara um resumo de cada um. No Claude, digite /projetos para ele saber onde cada projeto parou." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

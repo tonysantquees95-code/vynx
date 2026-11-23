@@ -143,6 +143,31 @@ fn instalar_claude(nome: String) -> Result<(), String> {
     Command::new("cmd").args(["/C", "start", "", "wsl.exe", "-d", &completo, "-u", "root", "--", "bash", "-lc", INSTALAR_CLAUDE]).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// Clona os repositórios do GitHub dentro do laboratório e monta o arquivo de contexto para o Claude.
+/// O token vai pela entrada padrão (nunca na linha de comando) e não fica guardado no .git.
+const IMPORTAR_PROJETOS: &str = include_str!("importar.sh");
+
+#[tauri::command]
+async fn importar_projetos(nome: String, token: String) -> Result<String, String> {
+    if !nome_valido(&nome) { return Err("Nome inválido".into()); }
+    let t = token.trim().to_string();
+    if t.len() < 20 || t.len() > 255 || !t.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') { return Err("Token do GitHub inválido. Conecte o GitHub no Painel Dev.".into()); }
+    let completo = format!("{PREFIXO}{nome}");
+    tauri::async_runtime::spawn_blocking(move || {
+        use std::io::Write;
+        let mut c = Command::new("wsl.exe");
+        c.args(["-d", &completo, "-u", "root", "--", "bash", "-c", "read -r GH_TOKEN; export GH_TOKEN; exec bash -s"]);
+        c.stdin(std::process::Stdio::piped()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
+        #[cfg(windows)]
+        { use std::os::windows::process::CommandExt; c.creation_flags(0x0800_0000); }
+        let mut filho = c.spawn().map_err(|e| format!("Não consegui falar com o laboratório: {e}"))?;
+        if let Some(mut e) = filho.stdin.take() { let _ = e.write_all(format!("{t}\n{IMPORTAR_PROJETOS}\n").as_bytes()); }
+        let s = filho.wait_with_output().map_err(|e| e.to_string())?;
+        let fim = |b: &[u8]| { let x = String::from_utf8_lossy(b).replace('\0', ""); let l: Vec<&str> = x.lines().filter(|l| !l.trim().is_empty()).collect(); l[l.len().saturating_sub(3)..].join(" ") };
+        if s.status.success() { Ok(fim(&s.stdout)) } else { Err(format!("Não consegui importar. {}", fim(&s.stderr).chars().take(300).collect::<String>())) }
+    }).await.map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 fn abrir_link(url: String) -> Result<(), String> {
     if !url.starts_with("https://") || url.chars().any(|c| c.is_whitespace() || matches!(c, '"' | '^' | '&' | '|' | '<' | '>')) { return Err("Só abro links https".into()); }
@@ -184,13 +209,20 @@ async fn android_captura() -> Result<String, String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura])
+        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura])
         .run(tauri::generate_context!())
         .expect("erro ao abrir o Vynx OS");
 }
 
 #[cfg(test)]
 mod testes {
+    #[test]
+    fn importador_nao_guarda_token_no_repositorio() {
+        assert!(super::IMPORTAR_PROJETOS.contains("http.extraheader"));
+        assert!(super::IMPORTAR_PROJETOS.contains("remote set-url origin"));
+        assert!(!super::IMPORTAR_PROJETOS.contains("x-access-token:@"));
+    }
+
     #[test]
     fn texto_do_claude_nao_tem_caractere_especial_do_cmd() {
         assert!(!super::INSTALAR_CLAUDE.chars().any(|c| matches!(c, '&' | '|' | '<' | '>' | '^' | '"' | '%')));

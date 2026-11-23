@@ -11,6 +11,7 @@ export interface Ponte {
   descartarLaboratorio(nome: string): Promise<void>;
   abrirTerminal(nome: string): Promise<void>;
   instalarClaude(nome: string): Promise<void>;
+  importarProjetos(nome: string, token: string): Promise<string>;
   abrirLink(url: string): Promise<void>;
   // Emulador de Android
   androidEstado(): Promise<EstadoAndroid>;
@@ -29,6 +30,7 @@ const real: Ponte = {
   descartarLaboratorio: (nome) => invoke("descartar_laboratorio", { nome }),
   abrirTerminal: (nome) => invoke("abrir_terminal", { nome }),
   instalarClaude: (nome) => invoke("instalar_claude", { nome }),
+  importarProjetos: (nome, token) => invoke("importar_projetos", { nome, token }),
   abrirLink: (url) => invoke("abrir_link", { url }),
   androidEstado: () => invoke<EstadoAndroid>("android_estado"),
   androidProgresso: () => invoke<ProgressoAndroid>("android_progresso"),
@@ -69,6 +71,7 @@ function demo(): Ponte {
     descartarLaboratorio: async (nome) => { await espera(300); distros = distros.filter((d) => d.nome !== PREFIXO + nome); },
     abrirTerminal: async () => { /* só no Windows */ },
     instalarClaude: async () => { /* só no Windows */ },
+    importarProjetos: async () => "Pronto: 10 projetos em /root/projetos. Abra o Claude e digite /projetos.",
     abrirLink: async (url) => { window.open(url, "_blank", "noopener"); },
   };
 }
