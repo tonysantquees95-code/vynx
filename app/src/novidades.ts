@@ -8,6 +8,7 @@ export const NOVIDADES: Novidade[] = [
   { id: 1, data: "2026-11-23", tipo: "novo", titulo: "Vynx OS chegou", texto: "A primeira versão tem Laboratório (Linux isolado e descartável para testar programas) e Painel Dev (seus repositórios e builds do GitHub)." },
   { id: 2, data: "2026-11-23", tipo: "novo", titulo: "Emulador de Android", texto: "Nova aba Android: o Vynx prepara o emulador oficial, cria um celular virtual e instala os apps da suíte direto das versões do GitHub, para você testar sem instalar no telefone." },
   { id: 3, data: "2026-11-23", tipo: "novo", titulo: "Entrar com o Vetorial ID", texto: "O Vynx OS agora abre pedindo o seu Vetorial ID, o mesmo dos outros apps da Vetorial Tech. Na conta de administração, o Painel Dev já abre conectado ao GitHub, sem você colar nenhum token. Em Ajustes você vê a conta e pode sair." },
+  { id: 4, data: "2026-11-23", tipo: "melhoria", titulo: "Logo novo", texto: "O Vynx OS ganhou um logo só dele: um laboratório em forma de hexágono com um Y de ramificação dentro. Ele não se parece mais com o de nenhum outro app da suíte." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };
