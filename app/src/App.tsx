@@ -6,12 +6,14 @@ import { Apresentacao } from "./telas/Apresentacao";
 import { Novidades } from "./telas/Novidades";
 import { Inicio, type Aba } from "./telas/Inicio";
 import { Laboratorio } from "./telas/Laboratorio";
+import { Android } from "./telas/Android";
 import { PainelDev } from "./telas/PainelDev";
 import { Ajustes } from "./telas/Ajustes";
 
 const ABAS: { id: Aba; rotulo: string; icone: string }[] = [
   { id: "inicio", rotulo: "Início", icone: "🏠" },
   { id: "laboratorio", rotulo: "Laboratório", icone: "🧪" },
+  { id: "android", rotulo: "Android", icone: "📱" },
   { id: "painel", rotulo: "Painel Dev", icone: "🛰️" },
   { id: "ajustes", rotulo: "Ajustes", icone: "⚙️" },
 ];
@@ -43,6 +45,7 @@ export default function App() {
         <div className="mx-auto w-full max-w-5xl">
           {aba === "inicio" && <Inicio ir={setAba} githubConectado={github} />}
           {aba === "laboratorio" && <Laboratorio />}
+          {aba === "android" && <Android />}
           {aba === "painel" && <PainelDev aoMudarConexao={() => setGithub(temToken())} />}
           {aba === "ajustes" && <Ajustes aoDesconectarGithub={() => setGithub(false)} />}
         </div>

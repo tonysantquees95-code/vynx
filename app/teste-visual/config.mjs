@@ -4,6 +4,9 @@ const src = (f) => readFileSync(new URL(`../src/${f}`, import.meta.url), "utf8")
 const TERMOS = src("apresentacao.ts").match(/VERSAO_DOS_TERMOS\s*=\s*(\d+)/)[1];
 
 const semWsl = JSON.stringify({ instalado: false });
+const andPronto = JSON.stringify({ preparado: true, celulares: ["vynx-celular"], ligado: true, pronto: true });
+const andCelular = JSON.stringify({ preparado: true, celulares: [] });
+const andDesligado = JSON.stringify({ preparado: true, celulares: ["vynx-celular", "vynx-tablet"] });
 const comLab = JSON.stringify({ instalado: true, distros: [{ nome: "Ubuntu", estado: "Running", versao: 2 }, { nome: "vynx-lab-teste", estado: "Stopped", versao: 2 }] });
 
 export default {
@@ -13,6 +16,9 @@ export default {
     "vynx.tour": "1", "vynx.termos": TERMOS,
     "vynx.novidades.vistas": modo === "atualizou" ? "0" : "9999",
     ...(modo === "sem-wsl" ? { "vynx.demo.wsl": semWsl } : {}),
+    ...(modo === "android-pronto" ? { "vynx.demo.android": andPronto } : {}),
+    ...(modo === "android-celular" ? { "vynx.demo.android": andCelular } : {}),
+    ...(modo === "android-desligado" ? { "vynx.demo.android": andDesligado } : {}),
     ...(modo === "com-lab" ? { "vynx.demo.wsl": comLab } : {}),
   },
   respostas: { "/user/repos": [], "/atualizacao": {} },
@@ -23,6 +29,10 @@ export default {
     ["laboratorio-sem-wsl", "sem-wsl", async (p, a) => { await a.aba(p, "Laboratório"); await p.getByText("O WSL2 ainda não está instalado").waitFor(); }],
     ["laboratorio-lista", "com-lab", async (p, a) => { await a.aba(p, "Laboratório"); await p.getByRole("button", { name: "Abrir terminal" }).first().waitFor(); }],
     ["laboratorio-descartar", "com-lab", async (p, a) => { await a.aba(p, "Laboratório"); await p.getByRole("button", { name: "Descartar" }).first().click(); await p.getByRole("dialog", { name: "Descartar laboratório" }).waitFor(); }],
+    ["android-preparar", "normal", async (p, a) => { await a.aba(p, "Android"); await p.getByRole("heading", { name: "1. Preparar o emulador" }).waitFor(); const b = p.getByRole("button", { name: "Preparar emulador" }); if (!(await b.isDisabled())) throw new Error("o botão deveria esperar a licença"); await p.getByRole("checkbox").check(); if (await b.isDisabled()) throw new Error("com a licença aceita o botão deveria liberar"); await b.click(); await p.getByRole("status").first().waitFor(); await p.waitForTimeout(2500); await p.getByRole("heading", { name: "2. Criar um celular virtual" }).waitFor(); }],
+    ["android-criar-celular", "android-celular", async (p, a) => { await a.aba(p, "Android"); await p.getByRole("radio", { name: /Tablet/ }).click(); if ((await p.getByRole("radio", { name: /Tablet/ }).getAttribute("aria-checked")) !== "true") throw new Error("o tipo escolhido deveria aparecer selecionado"); await p.getByRole("button", { name: "Criar celular virtual" }).click(); await p.getByText("Tablet", { exact: true }).first().waitFor(); }],
+    ["android-ligar", "android-desligado", async (p, a) => { await a.aba(p, "Android"); await p.getByRole("button", { name: "Ligar" }).first().waitFor(); }],
+    ["android-instalar", "android-pronto", async (p, a) => { await a.aba(p, "Android"); await p.getByRole("heading", { name: "Instalar um app" }).waitFor(); await p.getByRole("button", { name: "Instalar e abrir" }).first().waitFor(); }],
     ["painel-dev", "normal", async (p, a) => { await a.aba(p, "Painel Dev"); await p.getByRole("heading", { name: "Conectar ao GitHub" }).waitFor(); }],
     ["ajustes", "normal", async (p, a) => { await a.aba(p, "Ajustes"); await p.getByRole("heading", { name: "Ajustes" }).waitFor(); }],
     ["feedback", "normal", async (p, a) => { await a.aba(p, "Ajustes"); await p.getByRole("button", { name: "Enviar feedback" }).click(); await p.getByText(/^FEEDBACK/).waitFor(); await p.waitForTimeout(300); }],

@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { laboratorios, type EstadoWsl } from "../laboratorio";
 import { ponte } from "../ponte";
+import { resumo, type EstadoAndroid } from "../android";
 
-export type Aba = "inicio" | "laboratorio" | "painel" | "ajustes";
+export type Aba = "inicio" | "laboratorio" | "android" | "painel" | "ajustes";
 
 /** Início: resumo do ambiente e atalhos. */
 export function Inicio({ ir, githubConectado }: { ir: (a: Aba) => void; githubConectado: boolean }) {
   const [wsl, setWsl] = useState<EstadoWsl | null>(null);
   useEffect(() => { ponte.estadoWsl().then(setWsl).catch(() => setWsl({ instalado: false, virtualizacao: null, distros: [] })); }, []);
+  const [and, setAnd] = useState<EstadoAndroid | null>(null);
+  useEffect(() => { ponte.androidEstado().then(setAnd).catch(() => setAnd(null)); }, []);
   const labs = wsl ? laboratorios(wsl.distros).length : 0;
   const cartao = "rounded-2xl border border-borda bg-painel p-5 text-left";
   return (
@@ -18,6 +21,11 @@ export function Inicio({ ir, githubConectado }: { ir: (a: Aba) => void; githubCo
           <span className="text-3xl" aria-hidden>🧪</span>
           <b className="mt-2 block text-lg">Laboratório</b>
           <span className="text-sm text-suave">{!wsl ? "Procurando o WSL…" : !wsl.instalado ? "WSL2 não instalado: toque para ver como ligar." : labs === 0 ? "Nenhum laboratório ainda. Crie o primeiro." : `${labs} ${labs === 1 ? "laboratório" : "laboratórios"} isolado${labs === 1 ? "" : "s"}.`}</span>
+        </button>
+        <button onClick={() => ir("android")} className={cartao}>
+          <span className="text-3xl" aria-hidden>📱</span>
+          <b className="mt-2 block text-lg">Android</b>
+          <span className="text-sm text-suave">{resumo(and)}</span>
         </button>
         <button onClick={() => ir("painel")} className={cartao}>
           <span className="text-3xl" aria-hidden>🛰️</span>

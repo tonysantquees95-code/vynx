@@ -18,6 +18,14 @@
 - Comandos nativos (`estado_wsl`, `criar_laboratorio`, `descartar_laboratorio`, `abrir_terminal`, `abrir_link`): sempre `wsl.exe` com argumentos separados (nunca shell) e nomes validados (`nome_valido`/`base_valida`, espelhados em `laboratorio.ts`). Mudou a interface? Ajuste `app/src/ponte.ts` (incluindo o modo de demonstração).
 - No navegador e no teste visual vale a demonstração (WSL simulado em `localStorage "vynx.demo.wsl"`).
 
+## Emulador de Android (aba Android)
+- Nativo em `desktop/src-tauri/src/android.rs`; interface em `app/src/telas/Android.tsx`; lógica pura em `app/src/android.ts` (testada em `app/teste/android.test.mjs`; o Rust tem os próprios testes e roda na publicação).
+- Tudo fica em `%LOCALAPPDATA%\VynxOS\android` (JDK da Microsoft, ferramentas e emulador do Android, AVDs em `avd/`). Só usa `curl.exe` e `tar.exe` do Windows, sempre com argumentos separados. A licença do Android SDK só é aceita pela pessoa (caixa na tela) antes do download. Termos e permissões falam disso (`VERSAO_DOS_TERMOS` = 2).
+- Tarefas longas (preparar, instalar APK) rodam numa thread e a tela acompanha por `android_progresso`. Só uma tarefa por vez.
+- APK: só de release da conta (`url_apk_valida`), pacote só `tech.vetorial.*`. App novo na suíte: acrescente em `APPS_ANDROID` (`android.ts`) com repositório, nome do APK e `appId`. Imagem do sistema: `IMAGEM` (Android 35, x86_64). Celulares: `vynx-celular|pequeno|tablet`.
+- Demonstração (navegador e teste visual): `localStorage "vynx.demo.android"` = `{preparado, celulares, ligado, pronto}`. Mudou a interface do plugin? Ajuste `ponte.ts`.
+- Só dá para testar de verdade no Windows com virtualização ligada (WHPX/Hyper-V).
+
 ## Painel Dev
 - Token do GitHub só em `localStorage` (`vynx.github.token`), nunca no servidor. Lógica pura e testada em `github.ts`.
 

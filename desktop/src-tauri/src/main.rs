@@ -2,6 +2,8 @@
 // Tudo passa por `wsl.exe` com argumentos separados (nunca por shell) e nomes validados.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod android;
+
 use serde::Serialize;
 use std::io::Write;
 use std::path::PathBuf;
@@ -136,9 +138,42 @@ fn abrir_link(url: String) -> Result<(), String> {
     Command::new("rundll32").args(["url.dll,FileProtocolHandler", &url]).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
+// ---------- Emulador de Android ----------
+#[tauri::command]
+async fn android_estado() -> Result<android::EstadoAndroid, String> {
+    tauri::async_runtime::spawn_blocking(android::estado).await.map_err(|e| e.to_string())?
+}
+#[tauri::command]
+fn android_progresso() -> android::Progresso { android::progresso() }
+#[tauri::command]
+fn android_preparar(aceitou_licenca: bool) -> Result<(), String> {
+    if !aceitou_licenca { return Err("Aceite a licença do Android SDK para continuar".into()); }
+    android::tarefa("preparar", android::preparar)
+}
+#[tauri::command]
+async fn android_criar(perfil: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || android::criar_celular(&perfil)).await.map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn android_ligar(nome: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || android::ligar(&nome)).await.map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn android_desligar() -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(android::desligar).await.map_err(|e| e.to_string())?
+}
+#[tauri::command]
+fn android_instalar(url: String, pacote: String) -> Result<(), String> {
+    android::tarefa("instalar", move || android::instalar(&url, &pacote))
+}
+#[tauri::command]
+async fn android_captura() -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(android::capturar).await.map_err(|e| e.to_string())?
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, abrir_link])
+        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura])
         .run(tauri::generate_context!())
         .expect("erro ao abrir o Vynx OS");
 }

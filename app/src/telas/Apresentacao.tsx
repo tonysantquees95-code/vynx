@@ -54,8 +54,12 @@ function Permissoes({ aoVoltar, aoContinuar }: { aoVoltar: () => void; aoContinu
           <p className="mt-1 text-sm text-suave">Os laboratórios são distribuições Linux do WSL2. Se ele ainda não estiver instalado, o Vynx mostra o passo a passo em Laboratório. Ligar a virtualização na BIOS pode ser necessário.</p>
         </li>
         <li className="rounded-2xl border border-borda bg-painel p-4">
+          <div className="flex items-center justify-between gap-2"><b>📱 Emulador de Android</b><span className="text-xs text-aviso">só se você usar</span></div>
+          <p className="mt-1 text-sm text-suave">Na aba Android, o Vynx pede a sua licença antes de baixar o emulador (uns 3 GB) e usa a virtualização do computador. Se a virtualização estiver desligada na BIOS, o emulador fica lento ou não liga.</p>
+        </li>
+        <li className="rounded-2xl border border-borda bg-painel p-4">
           <div className="flex items-center justify-between gap-2"><b>🌐 Internet</b><span className="text-xs text-ok">liberada</span></div>
-          <p className="mt-1 text-sm text-suave">Só para o Painel Dev falar com o GitHub (com o seu token) e para procurar atualizações do Vynx.</p>
+          <p className="mt-1 text-sm text-suave">Para o Painel Dev falar com o GitHub (com o seu token), para procurar atualizações do Vynx e, se você usar o emulador, para baixá-lo e baixar os apps de teste.</p>
         </li>
         <li className="rounded-2xl border border-borda bg-painel p-4">
           <div className="flex items-center justify-between gap-2"><b>📁 Seus arquivos</b><span className="text-xs text-ok">fora do alcance</span></div>

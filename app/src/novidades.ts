@@ -6,6 +6,7 @@ export interface Novidade { id: number; data: string; tipo: TipoNovidade; titulo
 
 export const NOVIDADES: Novidade[] = [
   { id: 1, data: "2026-11-23", tipo: "novo", titulo: "Vynx OS chegou", texto: "A primeira versão tem Laboratório (Linux isolado e descartável para testar programas) e Painel Dev (seus repositórios e builds do GitHub)." },
+  { id: 2, data: "2026-11-23", tipo: "novo", titulo: "Emulador de Android", texto: "Nova aba Android: o Vynx prepara o emulador oficial, cria um celular virtual e instala os apps da suíte direto das versões do GitHub, para você testar sem instalar no telefone." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };
