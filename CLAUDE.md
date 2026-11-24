@@ -26,6 +26,10 @@
 - Demonstração (navegador e teste visual): `localStorage "vynx.demo.android"` = `{preparado, celulares, ligado, pronto}`. Mudou a interface do plugin? Ajuste `ponte.ts`.
 - Só dá para testar de verdade no Windows com virtualização ligada (WHPX/Hyper-V).
 
+## Casca do sistema (barra, dock e janelas)
+- `app/src/telas/Casca.tsx` monta a barra do topo, o dock (`nav` "Seções", um botão por app, o da frente fica preenchido e o aberto leva um ponto) e as janelas. Lógica pura em `app/src/janelas.ts` (abrir/focar/mover/minimizar/maximizar, sempre dentro da área; testada em `teste/janelas.test.mjs`). Abaixo de 900 px de largura cada app ocupa a tela toda e o dock vai para baixo. As janelas continuam montadas ao minimizar (não perdem o estado).
+- App novo: acrescente o id em `IdApp` e `TAMANHO` (`janelas.ts`), o ícone em `icones.tsx` (traço fino 1.8), a linha em `APPS` (`Casca.tsx`) e o `renderizar` em `App.tsx`. Cenários `casca-*` no teste visual. O ícone do app (`desktop/app-icon.png`) é o `logo.tsx` desenhado em 1024 px.
+
 ## Entrada (Vetorial ID)
 - O app abre na tela `telas/Entrar.tsx` (e-mail e senha do Vetorial ID, `app: "vynx"`); sessão em `localStorage "vynx.sessao"` (`conta.ts`). Administrador: `GET /id/github` (servidor) entrega o token de LEITURA do GitHub e o Painel Dev já abre conectado. Sair (Ajustes › Conta) apaga sessão e token. Teste visual: cenário `entrar` (modo `sem-conta`).
 

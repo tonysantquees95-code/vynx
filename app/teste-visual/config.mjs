@@ -38,6 +38,8 @@ export default {
     ["painel-dev", "normal", async (p, a) => { await a.aba(p, "Painel Dev"); await p.getByRole("heading", { name: "Conectar ao GitHub" }).waitFor(); }],
     ["documentos", "normal", async (p, a) => { await a.aba(p, "Documentos"); await p.getByRole("heading", { name: "Documentos" }).waitFor(); await p.locator("iframe[title=\"Vindex Documentos\"]").waitFor(); }],
     ["ajustes", "normal", async (p, a) => { await a.aba(p, "Ajustes"); await p.getByRole("heading", { name: "Ajustes" }).waitFor(); }],
+    ["casca-janelas", "normal", async (p, a) => { await a.aba(p, "Laboratório"); await a.aba(p, "Android"); await a.aba(p, "Ajustes"); await p.getByRole("region", { name: "Janela Ajustes" }).waitFor(); }],
+    ["casca-minimizar", "normal", async (p, a) => { await a.aba(p, "Laboratório"); const m = p.getByRole("button", { name: "Minimizar Laboratório" }); if (await m.count() && await m.isVisible()) { await m.click(); await p.waitForTimeout(200); } }],
     ["feedback", "normal", async (p, a) => { await a.aba(p, "Ajustes"); await p.getByRole("button", { name: "Enviar feedback" }).click(); await p.getByText(/^FEEDBACK/).waitFor(); await p.waitForTimeout(300); }],
   ],
 };
