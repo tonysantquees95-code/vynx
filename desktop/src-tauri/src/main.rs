@@ -133,9 +133,9 @@ fn abrir_terminal(nome: String) -> Result<(), String> {
     Command::new("cmd").args(["/C", "start", "", "wsl.exe", "-d", &completo]).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
-/// Instala o Claude Code dentro do laboratório (numa janela de terminal, para a pessoa ver o andamento).
+/// Instala o Claude Code dentro do laboratório com o instalador oficial (sem Node nem npm: o npm do Ubuntu puxava 200+ pacotes) (numa janela de terminal, para a pessoa ver o andamento).
 /// O texto é fixo e sem caracteres especiais do cmd (nada de & | < > ^ aspas), só o nome do laboratório vem de fora e é validado.
-const INSTALAR_CLAUDE: &str = "set -e; apt-get update -y; apt-get install -y curl ca-certificates nodejs npm git; npm install -g @anthropic-ai/claude-code; echo; echo Pronto. Agora digite claude e entre com a sua conta; exec bash -l";
+const INSTALAR_CLAUDE: &str = "set -e; apt-get update -y; apt-get install -y curl ca-certificates git; curl -fsSL https://claude.ai/install.sh -o /tmp/claude-instalar.sh; bash /tmp/claude-instalar.sh; ln -sf $HOME/.local/bin/claude /usr/local/bin/claude; echo; echo Pronto. Agora digite claude e entre com a sua conta; exec bash -l";
 
 #[tauri::command]
 fn instalar_claude(nome: String) -> Result<(), String> {
@@ -239,7 +239,8 @@ mod testes {
     #[test]
     fn texto_do_claude_nao_tem_caractere_especial_do_cmd() {
         assert!(!super::INSTALAR_CLAUDE.chars().any(|c| matches!(c, '&' | '|' | '<' | '>' | '^' | '"' | '%')));
-        assert!(super::INSTALAR_CLAUDE.contains("@anthropic-ai/claude-code"));
+        assert!(super::INSTALAR_CLAUDE.contains("claude.ai/install.sh"));
+        assert!(!super::INSTALAR_CLAUDE.contains("npm"), "npm do Ubuntu baixa mais de 200 pacotes e demora muito");
     }
 
     use super::*;
