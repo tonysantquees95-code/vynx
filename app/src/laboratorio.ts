@@ -6,6 +6,13 @@ export interface EstadoWsl { instalado: boolean; virtualizacao: boolean | null; 
 export interface Laboratorio { nome: string; completo: string; estado: string }
 
 /** Nome do laboratório: minúsculas, números e hífen (vira parte do nome da distribuição, então nada de espaço ou símbolo). */
+/** "[3/12] vynx" -> {atual: 3, total: 12} (o andamento que o script de importação imprime). */
+export function andamentoDaLinha(l: string): { atual: number; total: number } | null {
+  const m = /^\[(\d{1,4})\/(\d{1,4})\]/.exec(l.trim());
+  if (!m) return null;
+  const atual = Number(m[1]), total = Number(m[2]);
+  return total > 0 && atual <= total ? { atual, total } : null;
+}
 export const nomeValido = (n: string): boolean => /^[a-z0-9][a-z0-9-]{0,23}$/.test(n);
 export const limparNome = (n: string): string => n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24);
 

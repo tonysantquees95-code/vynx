@@ -7,6 +7,7 @@ mod atualizar;
 mod terminal;
 
 use serde::Serialize;
+use tauri::Emitter;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -150,7 +151,7 @@ fn instalar_claude(nome: String) -> Result<(), String> {
 const IMPORTAR_PROJETOS: &str = include_str!("importar.sh");
 
 #[tauri::command]
-async fn importar_projetos(nome: String, token: String) -> Result<String, String> {
+async fn importar_projetos(app: tauri::AppHandle, nome: String, token: String) -> Result<String, String> {
     if !nome_valido(&nome) { return Err("Nome inválido".into()); }
     let t = token.trim().to_string();
     if t.len() < 20 || t.len() > 255 || !t.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') { return Err("Token do GitHub inválido. Conecte o GitHub no Painel Dev.".into()); }
@@ -164,9 +165,23 @@ async fn importar_projetos(nome: String, token: String) -> Result<String, String
         { use std::os::windows::process::CommandExt; c.creation_flags(0x0800_0000); }
         let mut filho = c.spawn().map_err(|e| format!("Não consegui falar com o laboratório: {e}"))?;
         if let Some(mut e) = filho.stdin.take() { let _ = e.write_all(format!("{t}\n{IMPORTAR_PROJETOS}\n").as_bytes()); }
-        let s = filho.wait_with_output().map_err(|e| e.to_string())?;
-        let fim = |b: &[u8]| { let x = String::from_utf8_lossy(b).replace('\0', ""); let l: Vec<&str> = x.lines().filter(|l| !l.trim().is_empty()).collect(); l[l.len().saturating_sub(3)..].join(" ") };
-        if s.status.success() { Ok(fim(&s.stdout)) } else { Err(format!("Não consegui importar. {}", fim(&s.stderr).chars().take(300).collect::<String>())) }
+        // cada linha do script vai para a tela na hora (evento "importar-linha"), para a pessoa ver o andamento
+        let saida = filho.stdout.take();
+        let erro = filho.stderr.take();
+        let lidas = std::thread::spawn(move || {
+            use std::io::{BufRead, BufReader};
+            let mut v: Vec<String> = Vec::new();
+            if let Some(o) = saida { for l in BufReader::new(o).lines().map_while(Result::ok) { let l = l.replace('\0', ""); if !l.trim().is_empty() { let _ = app.emit("importar-linha", l.clone()); v.push(l); } } }
+            v
+        });
+        let erros = std::thread::spawn(move || { let mut t = String::new(); if let Some(mut e) = erro { let _ = std::io::Read::read_to_string(&mut e, &mut t); } t.replace('\0', "") });
+        let s = filho.wait().map_err(|e| e.to_string())?;
+        let linhas = lidas.join().unwrap_or_default();
+        let texto_erro = erros.join().unwrap_or_default();
+        if s.success() { Ok(linhas.last().cloned().unwrap_or_default()) } else {
+            let l: Vec<&str> = texto_erro.lines().filter(|l| !l.trim().is_empty()).collect();
+            Err(format!("Não consegui importar. {}", l[l.len().saturating_sub(3)..].join(" ").chars().take(300).collect::<String>()))
+        }
     }).await.map_err(|e| e.to_string())?
 }
 

@@ -1,4 +1,5 @@
 set -e
+echo "Preparando o laboratório…"
 export DEBIAN_FRONTEND=noninteractive
 command -v git >/dev/null 2>&1 || { apt-get update -y >/dev/null; apt-get install -y git curl ca-certificates jq >/dev/null; }
 command -v jq >/dev/null 2>&1 || { apt-get update -y >/dev/null; apt-get install -y jq curl ca-certificates >/dev/null; }
@@ -8,6 +9,8 @@ cd "$PASTA"
 AUTH="Authorization: Basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
 curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/user/repos?per_page=100&sort=pushed&affiliation=owner" > lista.json
 jq -r '.[] | select(.fork==false and .archived==false) | select(.name|test("^[A-Za-z0-9_.-]+$")) | .name' lista.json > nomes.txt
+TOTAL=$(wc -l < nomes.txt)
+echo "Achei $TOTAL projetos. Baixando um por um…"
 N=0
 {
   echo "# Meus projetos (importado pelo Vynx em $(date '+%d/%m/%Y %H:%M'))"
@@ -16,6 +19,7 @@ N=0
   echo
 } > PROJETOS.md
 while read -r R; do
+  echo "[$((N+1))/$TOTAL] $R"
   if [ -d "$R/.git" ]; then git -C "$R" -c http.extraheader="$AUTH" pull --ff-only -q || echo "aviso: não consegui atualizar $R"; else git -c http.extraheader="$AUTH" clone -q "https://github.com/$(jq -r '.[0].owner.login' lista.json)/$R.git" "$R" || { echo "aviso: não consegui clonar $R"; continue; }; fi
   git -C "$R" remote set-url origin "https://github.com/$(jq -r '.[0].owner.login' lista.json)/$R.git"
   N=$((N+1))

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { bases, laboratorios, limparNome, nomeValido, type EstadoWsl } from "../laboratorio";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { andamentoDaLinha, bases, laboratorios, limparNome, nomeValido, type EstadoWsl } from "../laboratorio";
 import { ponte } from "../ponte";
 
 const PRINCIPAL = "principal";
@@ -14,6 +14,14 @@ export function Laboratorio() {
   const [base, setBase] = useState("");
   const [descartar, setDescartar] = useState<string | null>(null);
   const [aviso, setAviso] = useState("");
+  const [linhas, setLinhas] = useState<string[]>([]);
+  const fim = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let parar: (() => void) | null = null, vivo = true;
+    void ponte.importarOuvir((l) => setLinhas((x) => [...x.slice(-199), l])).then((p) => { if (vivo) parar = p; else p(); });
+    return () => { vivo = false; parar?.(); };
+  }, []);
+  useEffect(() => { fim.current?.scrollIntoView({ block: "nearest" }); }, [linhas]);
 
   const ler = useCallback(async () => {
     try { const e = await ponte.estadoWsl(); setEstado(e); setErro(""); setBase((b) => b || bases(e.distros)[0]?.nome || ""); }
@@ -22,7 +30,7 @@ export function Laboratorio() {
   useEffect(() => { void ler(); }, [ler]);
 
   const executar = async (rotulo: string, f: () => Promise<void>) => {
-    setOcupado(rotulo); setErro("");
+    setOcupado(rotulo); setErro(""); setLinhas([]);
     try { await f(); await ler(); } catch (e) { setErro(String(e)); } finally { setOcupado(""); }
   };
 
@@ -76,6 +84,18 @@ export function Laboratorio() {
       {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
       {aviso && <p role="status" className="rounded-xl border border-neon/40 bg-painel p-3 text-sm text-neon">{aviso}</p>}
       {ocupado && <p role="status" className="rounded-xl border border-borda bg-painel p-3 text-sm text-suave">{ocupado}… isso pode levar alguns minutos.</p>}
+      {ocupado && linhas.length > 0 && (() => {
+        const a = [...linhas].reverse().map(andamentoDaLinha).find(Boolean);
+        const pct = a ? Math.round((a.atual / a.total) * 100) : 0;
+        return (
+          <div className="space-y-2 rounded-xl border border-borda bg-painel p-3">
+            {a && <div className="space-y-1"><div className="h-2.5 w-full overflow-hidden rounded-full bg-fundo" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Andamento da importação"><div className="h-full rounded-full bg-neon transition-all" style={{ width: `${pct}%` }} /></div><p className="text-xs text-suave">Projeto {a.atual} de {a.total} · {pct}%</p></div>}
+            <div role="log" aria-label="Andamento" className="mono rolagem max-h-40 overflow-y-auto rounded-lg bg-fundo p-2 text-xs text-suave">
+              {linhas.slice(-40).map((l, i) => <div key={i} className="break-words">{l}</div>)}<div ref={fim} />
+            </div>
+          </div>
+        );
+      })()}
       {!labs.some((l) => l.nome === PRINCIPAL) && opcoes.length > 0 && (
         <div className="rounded-2xl border border-neon/40 bg-painel p-5">
           <h2 className="font-bold">Laboratório principal</h2>

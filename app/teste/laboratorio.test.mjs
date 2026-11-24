@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { bases, laboratorios, lerListaWsl, limparNome, nomeValido, WSL_CONF_ISOLADO } from "../src/laboratorio.ts";
+import { andamentoDaLinha, bases, laboratorios, lerListaWsl, limparNome, nomeValido, WSL_CONF_ISOLADO } from "../src/laboratorio.ts";
 
 test("nome do laboratório: limpa acento e símbolo, e só aceita o que cabe no nome da distribuição", () => {
   assert.equal(limparNome("Meu Teste Ñ #1!"), "meu-teste-n-1");
@@ -18,4 +18,12 @@ test("lista do WSL: lê nome, estado e versão (com o asterisco da padrão e car
 test("o laboratório nasce sem acesso aos arquivos e programas do Windows", () => {
   assert.match(WSL_CONF_ISOLADO, /\[automount\]\nenabled=false/);
   assert.match(WSL_CONF_ISOLADO, /\[interop\]\nenabled=false/);
+});
+
+test("andamentoDaLinha lê [n/total] e ignora o resto", async () => {
+  const { andamentoDaLinha: f } = await import("../src/laboratorio.ts");
+  assert.deepEqual(f("[3/12] vynx"), { atual: 3, total: 12 });
+  assert.equal(f("Achei 12 projetos"), null);
+  assert.equal(f("[5/3] x"), null);
+  assert.equal(f("[0/0] x"), null);
 });
