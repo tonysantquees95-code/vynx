@@ -17,6 +17,7 @@ export const NOVIDADES: Novidade[] = [
   { id: 10, data: "2026-11-23", tipo: "novo", titulo: "Laboratório principal", texto: "Em Laboratório, o botão Criar laboratório principal monta o seu lugar de trabalho: um Linux com os projetos do GitHub já importados e o Claude instalado. Ele avisa antes de ser descartado." },
   { id: 11, data: "2026-11-23", tipo: "correcao", titulo: "Painel Dev não abre mais APK no navegador", texto: "Arquivos APK (de celular) não têm mais o botão Baixar, que abria o navegador e o Windows não sabia o que fazer. Nos apps de Android use Testar no celular virtual." },
   { id: 12, data: "2026-11-23", tipo: "novo", titulo: "Testar a Vênus no celular virtual", texto: "A Vênus agora aparece na aba Android e no Painel Dev. O Vynx baixa o APK dela com a sua conta do GitHub e instala no celular virtual para você testar." },
+  { id: 13, data: "2026-11-24", tipo: "correcao", titulo: "Atualizar o Vynx por dentro", texto: "Agora a atualização é feita dentro do próprio Vynx: toque em Baixar atualização, acompanhe a barra e toque em Instalar. Antes o botão não abria nada." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

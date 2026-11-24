@@ -6,15 +6,17 @@ export const BUILD: number = (() => {
   return Number.isInteger(n) && n > 0 ? n : 0;
 })();
 
-export interface InfoVersao { numero: number; notas: string }
+export interface InfoVersao { numero: number; notas: string; url: string; tamanho: number; sha256: string }
 export const haNovaVersao = (instalada: number, nova: number | undefined | null): boolean => instalada > 0 && !!nova && nova > instalada;
 
 export async function procurarVersao(): Promise<InfoVersao | null> {
   if (plataforma() !== "windows") return null;
   const r = await fetch(`${SERVIDOR}/atualizacao?app=vynx-windows`, { cache: "no-store" });
   if (!r.ok) return null;
-  const d = (await r.json()) as { numero?: number; notas?: string };
-  return typeof d.numero === "number" ? { numero: d.numero, notas: String(d.notas ?? "").slice(0, 300) } : null;
+  const d = (await r.json()) as { numero?: number; notas?: string; url?: string; tamanho?: number; sha256?: string };
+  return typeof d.numero === "number"
+    ? { numero: d.numero, notas: String(d.notas ?? "").slice(0, 300), url: String(d.url ?? ""), tamanho: Number(d.tamanho) || 0, sha256: String(d.sha256 ?? "") }
+    : null;
 }
 
 /** Endereço que baixa a versão nova (o servidor leva até o arquivo no GitHub). */

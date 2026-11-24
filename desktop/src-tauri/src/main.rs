@@ -3,6 +3,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod android;
+mod atualizar;
 
 use serde::Serialize;
 use std::io::Write;
@@ -207,9 +208,21 @@ async fn android_captura() -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(android::capturar).await.map_err(|e| e.to_string())?
 }
 
+// ---------- Atualização por dentro ----------
+#[tauri::command]
+fn atualizar_baixar(url: String, tamanho: u64, sha256: String) -> Result<(), String> { atualizar::baixar(url, tamanho, sha256) }
+#[tauri::command]
+fn atualizar_progresso() -> atualizar::EstadoAtualizacao { atualizar::estado() }
+#[tauri::command]
+fn atualizar_instalar(app: tauri::AppHandle) -> Result<(), String> {
+    atualizar::abrir_instalador()?;
+    std::thread::spawn(move || { std::thread::sleep(std::time::Duration::from_millis(900)); app.exit(0); });
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura])
+        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura, atualizar_baixar, atualizar_progresso, atualizar_instalar])
         .run(tauri::generate_context!())
         .expect("erro ao abrir o Vynx OS");
 }

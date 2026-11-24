@@ -42,4 +42,5 @@
 - Ajustes › Sobre tem "Enviar feedback" e "Reportar um erro" (`telas/FeedbackDoApp.tsx`, página `/feedback?app=vynx`). O CSP do `tauri.conf.json` precisa de `frame-src` do servidor.
 - `.github/workflows/app.yml`: verifica, testa o Rust, gera o instalador NSIS e publica a release `1.N` com `VynxSetup.exe`. Atualização por dentro (verificar → barra de download → Instalar) via `/atualizacao?app=vynx-windows`.
 - Servidor (`vetorial-servidor`): o app precisa estar em `feedback/dados.js` (`APPS`), no mapa de atualização e no Painel Dev; o Vindex enxerga todos os apps.
+- Atualização por dentro (Windows): `atualizar.rs` baixa `VynxSetup.exe` com `curl.exe` (progresso por `atualizar_progresso`), confere tamanho e SHA-256 do servidor e `atualizar_instalar` abre o instalador e fecha o app. A URL só vale se for `github.com/tonysantquees95-code/vynx/releases/download/.../VynxSetup.exe`. NÃO use `abrir_link` para baixar: ele recusa `&` na URL. Interface em `telas/Ajustes.tsx` (Baixar atualização → barra → Instalar); demo em `ponte.ts`.
 - Repositório público: nunca coloque chave, token ou senha no código.
