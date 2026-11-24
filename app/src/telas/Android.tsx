@@ -135,7 +135,7 @@ export function Android() {
             <div><h2 className="text-lg font-extrabold">Instalar um app</h2><p className="text-xs text-suave">Pega a versão mais nova das releases do GitHub, instala e abre.</p></div>
             <button disabled={!e.pronto || !!ocupado} onClick={() => void agir("Tirando a foto da tela", async () => { const c = await ponte.androidCaptura(); setAviso(`Foto salva em ${c}`); })} className="min-h-11 rounded-xl border border-borda px-4 font-bold disabled:opacity-40">Foto da tela</button>
           </div>
-          {!e.pronto && <p className="mt-3 text-sm text-aviso">O celular virtual ainda está ligando. Quando a tela do Android aparecer, é só instalar.</p>}
+          {!e.pronto && <p className="mt-3 text-sm text-aviso">O celular virtual ainda está ligando. A primeira vez demora uns 5 a 10 minutos (o Windows monta o Android do zero); depois fica bem mais rápido. Quando a tela do Android aparecer, é só instalar.</p>}
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {APPS_ANDROID.map((a) => (
               <li key={a.id} className="flex items-center gap-3 rounded-xl border border-borda bg-fundo p-3">

@@ -210,7 +210,8 @@ pub fn ligar(nome: &str) -> Result<(), String> {
     if !p.avd.join(format!("{nome}.ini")).exists() { return Err("Esse celular virtual não existe".into()); }
     let mut c = Command::new(p.emulador()); p.ambiente(&mut c);
     // Placa de vídeo por software: a janela do celular abre em qualquer computador (um pouco mais lenta, mas sempre aparece).
-    c.args(["-avd", nome, "-no-boot-anim", "-no-audio", "-gpu", "swiftshader_indirect", "-no-snapshot-load"]);
+    // Sem -no-snapshot-load: depois da primeira vez o emulador volta do "instantâneo" salvo ao fechar (segundos, não minutos).
+    c.args(["-avd", nome, "-no-boot-anim", "-no-audio", "-gpu", "swiftshader_indirect"]);
     let registro = p.raiz.join("emulador.log");
     let (saida, erro) = match std::fs::File::create(&registro).and_then(|f| f.try_clone().map(|g| (f, g))) {
         Ok((a, b)) => (Stdio::from(a), Stdio::from(b)),
