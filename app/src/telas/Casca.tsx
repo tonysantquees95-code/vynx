@@ -43,8 +43,6 @@ export function Casca({ usuario, admin, renderizar }: { usuario: string; admin: 
   }, []);
   useEffect(() => { const t = window.setInterval(() => setAgora(new Date()), 30_000); return () => window.clearInterval(t); }, []);
   useEffect(() => { setLista((l) => ajustarA(l, area)); }, [area]);
-  // a primeira janela: o Início
-  useEffect(() => { setLista((l) => (l.length ? l : abrir(l, "inicio", area))); }, [area]);
 
   const abrirApp = useCallback((id: IdApp) => setLista((l) => abrir(l, id, area)), [area]);
   const naFrente = ativa(lista);
@@ -68,7 +66,7 @@ export function Casca({ usuario, admin, renderizar }: { usuario: string; admin: 
         const foco = naFrente === a.id, aberta = abertas(lista, a.id);
         return (
           <button key={a.id} aria-label={a.rotulo} aria-current={foco ? "page" : undefined} title={a.rotulo}
-            onClick={() => { if (foco && !estreita) setLista((l) => minimizar(l, a.id)); else setLista((l) => abrir(l, a.id, area)); }}
+            onClick={() => { if (foco) setLista((l) => minimizar(l, a.id)); else setLista((l) => abrir(l, a.id, area)); }}
             className={`relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] ${estreita ? "min-h-14 flex-1 rounded-none border-transparent" : "h-[62px] w-[80px]"} ${foco ? "border-neon bg-neon text-fundo font-bold" : aberta ? "border-neon/50 bg-fundo text-texto" : "border-transparent text-suave hover:bg-fundo"}`}>
             <IconeApp id={a.id} tam={estreita ? 22 : 24} />
             <span className="max-w-full truncate px-0.5">{a.rotulo}</span>
@@ -91,6 +89,19 @@ export function Casca({ usuario, admin, renderizar }: { usuario: string; admin: 
       <div className={`flex min-h-0 flex-1 ${estreita ? "flex-col" : "flex-row"}`}>
         {!estreita && dock}
         <div ref={areaRef} className={`relative order-1 min-h-0 min-w-0 flex-1 overflow-hidden ${estreita ? "" : "bg-fundo"}`}>
+          <section aria-label="Mesa de trabalho" className="rolagem absolute inset-0 overflow-y-auto p-5" style={{ zIndex: 0 }}>
+            <p className="mb-4 text-sm text-suave">Mesa de trabalho · toque num atalho para abrir</p>
+            <div className="grid content-start gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(92px, 1fr))" }}>
+              {APPS.map((a) => (
+                <button key={a.id} aria-label={`Abrir ${a.rotulo}`} onClick={() => abrirApp(a.id)}
+                  className="relative flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border border-borda bg-painel/70 px-1 py-3 text-xs text-texto hover:border-neon/60">
+                  <span className="text-neon"><IconeApp id={a.id} tam={34} /></span>
+                  <span className="max-w-full truncate px-1">{a.rotulo}</span>
+                  {abertas(lista, a.id) && <span aria-hidden className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-neon" />}
+                </button>
+              ))}
+            </div>
+          </section>
           {lista.map((j) => {
             const cheia = estreita || j.max;
             const escondida = j.min || (estreita && j.id !== naFrente);
@@ -115,9 +126,6 @@ export function Casca({ usuario, admin, renderizar }: { usuario: string; admin: 
               </section>
             );
           })}
-          {!lista.some((j) => !j.min) && !estreita && (
-            <div className="grid h-full place-items-center text-center text-suave"><div><Logo tam={64} /><p className="mt-3 text-sm">Toque num app do dock para abrir.</p></div></div>
-          )}
         </div>
         {estreita && dock}
       </div>

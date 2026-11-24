@@ -21,6 +21,7 @@ export const NOVIDADES: Novidade[] = [
   { id: 14, data: "2026-11-24", tipo: "melhoria", titulo: "Instalar Claude bem mais rápido", texto: "O botão Instalar Claude do laboratório agora usa o instalador oficial e termina em poucos minutos, em vez de baixar centenas de pacotes." },
   { id: 15, data: "2026-11-24", tipo: "novo", titulo: "Novo visual de sistema", texto: "O Vynx agora parece um sistema: barra no topo com hora e seu usuário, dock de apps ao lado e janelas que você arrasta, minimiza e maximiza (o app do dock aberto fica marcado). Em tela pequena cada app ocupa a tela toda. O ícone do app também é o logo novo." },
   { id: 16, data: "2026-11-24", tipo: "melhoria", titulo: "Celular virtual liga mais rápido", texto: "O celular virtual agora guarda o estado ao fechar: só a primeira vez demora; nas próximas ele volta em segundos. A tela avisa quanto tempo a primeira vez leva." },
+  { id: 17, data: "2026-11-24", tipo: "novo", titulo: "Mesa de trabalho", texto: "Ao abrir o Vynx você vê a mesa de trabalho com atalhos para todos os apps. Toque num atalho para abrir a janela; toque no app do dock que está na frente para minimizar e voltar à mesa." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };
