@@ -4,6 +4,7 @@
 
 mod android;
 mod atualizar;
+mod terminal;
 
 use serde::Serialize;
 use std::io::Write;
@@ -208,6 +209,17 @@ async fn android_captura() -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(android::capturar).await.map_err(|e| e.to_string())?
 }
 
+// ---------- Terminal do laboratório ----------
+#[tauri::command]
+fn terminal_abrir(app: tauri::AppHandle, nome: String, colunas: u16, linhas: u16) -> Result<(), String> {
+    if !nome_valido(&nome) { return Err("Nome inválido".into()); }
+    terminal::abrir(app, format!("{PREFIXO}{nome}"), colunas, linhas)
+}
+#[tauri::command]
+fn terminal_escrever(dados: String) -> Result<(), String> { terminal::escrever(&dados) }
+#[tauri::command]
+fn terminal_fechar() { terminal::fechar() }
+
 // ---------- Atualização por dentro ----------
 #[tauri::command]
 fn atualizar_baixar(url: String, tamanho: u64, sha256: String) -> Result<(), String> { atualizar::baixar(url, tamanho, sha256) }
@@ -222,7 +234,7 @@ fn atualizar_instalar(app: tauri::AppHandle) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura, atualizar_baixar, atualizar_progresso, atualizar_instalar])
+        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura, atualizar_baixar, atualizar_progresso, atualizar_instalar, terminal_abrir, terminal_escrever, terminal_fechar])
         .run(tauri::generate_context!())
         .expect("erro ao abrir o Vynx OS");
 }

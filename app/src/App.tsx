@@ -6,6 +6,7 @@ import { Novidades } from "./telas/Novidades";
 import { Inicio } from "./telas/Inicio";
 import { Casca } from "./telas/Casca";
 import { Laboratorio } from "./telas/Laboratorio";
+import { Terminal } from "./telas/Terminal";
 import { Android } from "./telas/Android";
 import { Documentos } from "./telas/Documentos";
 import { PainelDev } from "./telas/PainelDev";
@@ -30,6 +31,7 @@ export default function App() {
     <Casca usuario={sessao.nome || sessao.email} admin={sessao.admin} renderizar={(id, abrirApp) => {
       if (id === "inicio") return <Inicio ir={abrirApp} githubConectado={github} />;
       if (id === "laboratorio") return <Laboratorio />;
+      if (id === "terminal") return <Terminal />;
       if (id === "android") return <Android />;
       if (id === "painel") return <PainelDev aoMudarConexao={() => setGithub(temToken())} />;
       if (id === "documentos") return <Documentos />;

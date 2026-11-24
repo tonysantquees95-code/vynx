@@ -1,6 +1,6 @@
 // Janelas do Vynx OS (lógica pura, testada em teste/janelas.test.mjs): abrir, focar, mover, minimizar, maximizar, fechar.
 // As janelas ficam sempre dentro da área de trabalho; a ordem de empilhamento é a posição em `z` (1..n).
-export type IdApp = "inicio" | "laboratorio" | "android" | "painel" | "documentos" | "ajustes";
+export type IdApp = "inicio" | "laboratorio" | "terminal" | "android" | "painel" | "documentos" | "ajustes";
 export interface Janela { id: IdApp; x: number; y: number; w: number; h: number; z: number; min: boolean; max: boolean }
 export interface Area { w: number; h: number }
 
@@ -8,6 +8,7 @@ export interface Area { w: number; h: number }
 export const TAMANHO: Record<IdApp, { w: number; h: number }> = {
   inicio: { w: 760, h: 520 },
   laboratorio: { w: 820, h: 560 },
+  terminal: { w: 860, h: 560 },
   android: { w: 820, h: 580 },
   painel: { w: 860, h: 580 },
   documentos: { w: 900, h: 600 },

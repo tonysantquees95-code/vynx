@@ -1,5 +1,6 @@
 // Ponte com o Windows (Tauri). No navegador e no teste visual vale o modo de demonstração, que só mexe na memória.
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { PREFIXO, type EstadoWsl } from "./laboratorio";
 import type { EstadoAndroid, ProgressoAndroid, PerfilId } from "./android";
 
@@ -15,6 +16,12 @@ export interface Ponte {
   instalarClaude(nome: string): Promise<void>;
   importarProjetos(nome: string, token: string): Promise<string>;
   abrirLink(url: string): Promise<void>;
+  // Terminal do laboratório (dentro de uma janela do Vynx)
+  terminalAbrir(nome: string, colunas: number, linhas: number): Promise<void>;
+  terminalEscrever(dados: string): Promise<void>;
+  terminalFechar(): Promise<void>;
+  /** Recebe a saída do terminal; devolve a função que para de ouvir. */
+  terminalOuvir(aoSaida: (bytes: Uint8Array) => void, aoFim: () => void): Promise<() => void>;
   // Atualização por dentro
   atualizarBaixar(url: string, tamanho: number, sha256: string): Promise<void>;
   atualizarProgresso(): Promise<EstadoAtualizacao>;
@@ -38,6 +45,14 @@ const real: Ponte = {
   instalarClaude: (nome) => invoke("instalar_claude", { nome }),
   importarProjetos: (nome, token) => invoke("importar_projetos", { nome, token }),
   abrirLink: (url) => invoke("abrir_link", { url }),
+  terminalAbrir: (nome, colunas, linhas) => invoke("terminal_abrir", { nome, colunas, linhas }),
+  terminalEscrever: (dados) => invoke("terminal_escrever", { dados }),
+  terminalFechar: () => invoke("terminal_fechar"),
+  terminalOuvir: async (aoSaida, aoFim) => {
+    const a = await listen<number[]>("terminal-saida", (e) => aoSaida(new Uint8Array(e.payload)));
+    const b = await listen("terminal-fim", () => aoFim());
+    return () => { a(); b(); };
+  },
   atualizarBaixar: (url, tamanho, sha256) => invoke("atualizar_baixar", { url, tamanho, sha256 }),
   atualizarProgresso: () => invoke<EstadoAtualizacao>("atualizar_progresso"),
   atualizarInstalar: () => invoke("atualizar_instalar"),
@@ -60,6 +75,8 @@ function demo(): Ponte {
   // Android simulado: localStorage "vynx.demo.android" = {preparado, celulares, ligado, pronto}
   let a: EstadoAndroid = { jdk: false, ferramentas: false, emulador: false, imagem: false, preparado: false, celulares: [], ligado: null, pronto: false, aceleracao: true };
   try { const d = JSON.parse(localStorage.getItem("vynx.demo.android") ?? "null"); if (d) { const p = d.preparado === true; a = { ...a, jdk: p, ferramentas: p, emulador: p, imagem: p, preparado: p, celulares: d.celulares ?? [], ligado: d.ligado ? "emulator-5554" : null, pronto: d.pronto === true }; } } catch { /* usa o padrão */ }
+  const ouvintes: { saida?: (b: Uint8Array) => void; fim?: () => void } = {};
+  const txt = (t: string) => new TextEncoder().encode(t);
   let au: EstadoAtualizacao = { ativo: false, baixado: 0, total: 0, pronto: false, erro: null };
   let prog: ProgressoAndroid = { ativo: false, tarefa: "", etapa: "", detalhe: "", erro: null, concluida: false };
   const tarefaDemo = async (tarefa: string, etapas: string[], fim: () => void) => {
@@ -83,6 +100,10 @@ function demo(): Ponte {
     instalarClaude: async () => { /* só no Windows */ },
     importarProjetos: async () => "Pronto: 10 projetos em /root/projetos. Abra o Claude e digite /projetos.",
     abrirLink: async (url) => { window.open(url, "_blank", "noopener"); },
+    terminalAbrir: async (nome) => { ouvintes.saida = ouvintes.saida ?? (() => {}); setTimeout(() => ouvintes.saida?.(txt(`Terminal de demonstração do laboratório ${nome}.\r\nNo Windows isto é o Linux de verdade.\r\nroot@${nome}:~# `)), 50); },
+    terminalEscrever: async (dados) => { ouvintes.saida?.(txt(dados.replace(/\r/g, "\r\n"))); },
+    terminalFechar: async () => { ouvintes.fim?.(); },
+    terminalOuvir: async (aoSaida, aoFim) => { ouvintes.saida = aoSaida; ouvintes.fim = aoFim; return () => { ouvintes.saida = undefined; ouvintes.fim = undefined; }; },
     atualizarBaixar: async (_u, tamanho) => {
       const total = tamanho || 50_000_000; au = { ativo: true, baixado: 0, total, pronto: false, erro: null };
       const passo = () => { if (au.baixado >= total) { au = { ...au, ativo: false, pronto: true }; return; } au = { ...au, baixado: Math.min(total, au.baixado + total / 5) }; setTimeout(passo, 300); };

@@ -6,6 +6,7 @@ import { abertas, abrir, ajustarA, alternarMaximizada, ativa, fechar, focar, LAR
 export const APPS: { id: IdApp; rotulo: string }[] = [
   { id: "inicio", rotulo: "Início" },
   { id: "laboratorio", rotulo: "Laboratório" },
+  { id: "terminal", rotulo: "Terminal" },
   { id: "android", rotulo: "Android" },
   { id: "painel", rotulo: "Painel Dev" },
   { id: "documentos", rotulo: "Documentos" },
