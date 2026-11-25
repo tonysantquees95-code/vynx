@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { APPS_ANDROID, PERFIS, RAM_E_DISCO, nomeDoCelular, passoAtual, rotuloDoCelular, urlDaApi, urlDoApk, type AppAndroid, type AssetDaRelease, type EstadoAndroid, type PerfilId, type ProgressoAndroid } from "../android";
 import { API_GITHUB } from "../github";
 import { ponte } from "../ponte";
+import { porcentagem } from "../andamento";
+import { Andamento } from "./Andamento";
 
 const LICENCA = "https://developer.android.com/studio/terms";
 const cartao = "rounded-2xl border border-borda bg-painel p-5";
@@ -16,6 +18,8 @@ export function Android() {
   const [perfil, setPerfil] = useState<PerfilId>("celular");
   const [aviso, setAviso] = useState("");
   const vivo = useRef(true);
+  const [tOcupado, setTOcupado] = useState(0);
+  const [tLigando, setTLigando] = useState(0);
   useEffect(() => () => { vivo.current = false; }, []);
 
   const ler = useCallback(async () => {
@@ -35,6 +39,7 @@ export function Android() {
   }, [trabalhando, ler]);
   // enquanto o celular liga, confere até ficar pronto
   const ligando = !!e?.ligado && !e.pronto;
+  useEffect(() => { if (ligando) setTLigando((t) => t || Date.now()); else setTLigando(0); }, [ligando]);
   useEffect(() => { if (!ligando) return; const t = setInterval(() => void ler(), 3000); return () => clearInterval(t); }, [ligando, ler]);
 
   const iniciarTarefa = async (f: () => Promise<void>) => {
@@ -42,7 +47,7 @@ export function Android() {
     try { await f(); setProg({ ativo: true, tarefa: "", etapa: "Começando…", detalhe: "", erro: null, concluida: false }); } catch (x) { setErro(String(x)); }
   };
   const agir = async (rotulo: string, f: () => Promise<void>) => {
-    setOcupado(rotulo); setErro(""); setAviso("");
+    setOcupado(rotulo); setTOcupado(Date.now()); setErro(""); setAviso("");
     try { await f(); await ler(); } catch (x) { setErro(String(x)); } finally { setOcupado(""); }
   };
 
@@ -68,11 +73,14 @@ export function Android() {
       {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
       {aviso && <p role="status" className="rounded-xl border border-ok/40 bg-painel p-3 text-sm text-ok">{aviso}</p>}
       {(trabalhando || ocupado) && (
-        <div role="status" className="rounded-xl border border-neon/40 bg-painel p-4 text-sm">
-          <b className="block">{ocupado || prog?.etapa}</b>
-          {prog?.detalhe && <span className="mono mt-1 block truncate text-xs text-suave">{prog.detalhe}</span>}
-          <span className="mt-1 block text-xs text-suave">Pode levar vários minutos. Deixe o Vynx aberto.</span>
-        </div>
+        <Andamento titulo={ocupado || (prog?.tarefa === "instalar" ? "Instalando o app no celular virtual" : "Preparando o emulador do Android")} etapa={ocupado ? undefined : prog?.etapa} detalhe={ocupado ? undefined : prog?.detalhe}
+          inicio={ocupado ? tOcupado : (prog?.inicio ?? 0) * 1000 || Date.now()} noticia={ocupado ? tOcupado : (prog?.noticia ?? 0) * 1000 || Date.now()}
+          porcentagem={!ocupado && prog?.passos ? porcentagem(Math.max(1, prog.passo ?? 1), prog.passos) : null}
+          filhos={ocupado ? <p className="text-xs text-suave">Isso pode levar alguns minutos.</p> : prog?.tarefa === "preparar" ? <p className="text-xs text-suave">São uns 3 GB: no seu computador a parte do emulador é a mais demorada. O tamanho baixado aparece acima.</p> : undefined} />
+      )}
+      {e.ligado && !e.pronto && !trabalhando && !ocupado && (
+        <Andamento titulo="Ligando o celular virtual" etapa="O Android está ligando. Na primeira vez demora bastante em computador mais fraco; depois volta do instantâneo em segundos." inicio={tLigando} noticia={tLigando}
+          aoCancelar={() => void agir("Desligando", () => ponte.androidDesligar())} rotuloCancelar="Desligar" />
       )}
 
       {passo === "preparar" && (

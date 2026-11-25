@@ -2,6 +2,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { PREFIXO, type EstadoWsl } from "./laboratorio";
+import type { Metricas } from "./metricas";
 import type { EstadoAndroid, ProgressoAndroid, PerfilId } from "./android";
 
 export const ehTauri = (): boolean => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -15,6 +16,15 @@ export interface Ponte {
   abrirTerminal(nome: string): Promise<void>;
   instalarClaude(nome: string): Promise<void>;
   importarProjetos(nome: string, token: string): Promise<string>;
+  importarCancelar(nome: string): Promise<void>;
+  metricas(): Promise<Metricas>;
+  liberarRam(encerrarLabs: boolean): Promise<string>;
+  externoInstalado(id: "vindex" | "velox"): Promise<boolean>;
+  externoAbrir(id: "vindex" | "velox"): Promise<void>;
+  telaCheia(ativar: boolean): Promise<boolean>;
+  telaCheiaEstado(): Promise<boolean>;
+  projetosListar(nome: string): Promise<string[]>;
+  pastaAbrir(nome: string): Promise<void>;
   /** Recebe as linhas do andamento da importação; devolve a função que para de ouvir. */
   importarOuvir(aoLinha: (linha: string) => void): Promise<() => void>;
   abrirLink(url: string): Promise<void>;
@@ -46,6 +56,15 @@ const real: Ponte = {
   abrirTerminal: (nome) => invoke("abrir_terminal", { nome }),
   instalarClaude: (nome) => invoke("instalar_claude", { nome }),
   importarProjetos: (nome, token) => invoke("importar_projetos", { nome, token }),
+  importarCancelar: (nome) => invoke("importar_cancelar", { nome }),
+  metricas: () => invoke<Metricas>("metricas"),
+  liberarRam: (encerrarLabs) => invoke<string>("liberar_ram", { encerrarLabs }),
+  externoInstalado: (id) => invoke<boolean>("externo_instalado", { id }),
+  externoAbrir: (id) => invoke("externo_abrir", { id }),
+  telaCheia: (ativar) => invoke<boolean>("tela_cheia", { ativar }),
+  telaCheiaEstado: () => invoke<boolean>("tela_cheia_estado"),
+  projetosListar: (nome) => invoke<string[]>("projetos_listar", { nome }),
+  pastaAbrir: (nome) => invoke("pasta_abrir", { nome }),
   abrirLink: (url) => invoke("abrir_link", { url }),
   importarOuvir: async (aoLinha) => await listen<string>("importar-linha", (e) => aoLinha(String(e.payload))),
   terminalAbrir: (nome, colunas, linhas) => invoke("terminal_abrir", { nome, colunas, linhas }),
@@ -78,6 +97,7 @@ function demo(): Ponte {
   // Android simulado: localStorage "vynx.demo.android" = {preparado, celulares, ligado, pronto}
   let a: EstadoAndroid = { jdk: false, ferramentas: false, emulador: false, imagem: false, preparado: false, celulares: [], ligado: null, pronto: false, aceleracao: true };
   try { const d = JSON.parse(localStorage.getItem("vynx.demo.android") ?? "null"); if (d) { const p = d.preparado === true; a = { ...a, jdk: p, ferramentas: p, emulador: p, imagem: p, preparado: p, celulares: d.celulares ?? [], ligado: d.ligado ? "emulator-5554" : null, pronto: d.pronto === true }; } } catch { /* usa o padrão */ }
+  let cheia = false;
   const ouvintes: { saida?: (b: Uint8Array) => void; fim?: () => void; importar?: (l: string) => void } = {};
   const txt = (t: string) => new TextEncoder().encode(t);
   let au: EstadoAtualizacao = { ativo: false, baixado: 0, total: 0, pronto: false, erro: null };
@@ -103,11 +123,22 @@ function demo(): Ponte {
     instalarClaude: async () => { /* só no Windows */ },
     importarProjetos: async () => {
       const nomes = ["venus-core", "vindex", "vortex", "voxix", "vynx"];
-      ouvintes.importar?.("Preparando o laboratório…"); await espera(300);
-      ouvintes.importar?.(`Achei ${nomes.length} projetos. Baixando um por um…`);
+      ouvintes.importar?.("Etapa 1 de 4: Preparando as ferramentas do laboratório (git, curl, jq)"); await espera(300);
+      ouvintes.importar?.("Etapa 2 de 4: Conferindo a internet e a sua conta do GitHub"); await espera(300);
+      ouvintes.importar?.(`Achei ${nomes.length} projetos na conta demo.`);
+      ouvintes.importar?.("Etapa 3 de 4: Baixando os projetos, um por um");
       for (let i = 0; i < nomes.length; i++) { await espera(350); ouvintes.importar?.(`[${i + 1}/${nomes.length}] ${nomes[i]}`); }
       return "Pronto: 5 projetos em /root/projetos. Abra o Claude e digite /projetos.";
     },
+    importarCancelar: async () => { /* só no Windows */ },
+    metricas: async () => { const t = Date.now() / 1000; return { cpu: Math.round(35 + 30 * Math.sin(t / 5)), ram_usada_mb: 5600, ram_total_mb: 8192, gpu: Math.round(20 + 15 * Math.sin(t / 7)) }; },
+    liberarRam: async (e) => { await espera(500); return `${e ? 1 : 0} laboratório(s) encerrado(s). Memória liberada: 420 MB.`; },
+    externoInstalado: async (id) => { try { return localStorage.getItem(`vynx.demo.${id}`) === "1"; } catch { return false; } },
+    externoAbrir: async () => { /* só no Windows */ },
+    telaCheia: async (ativar) => { cheia = ativar; return cheia; },
+    telaCheiaEstado: async () => cheia,
+    projetosListar: async () => { try { return JSON.parse(localStorage.getItem("vynx.demo.projetos") ?? "[]"); } catch { return []; } },
+    pastaAbrir: async () => { /* só no Windows */ },
     importarOuvir: async (aoLinha) => { ouvintes.importar = aoLinha; return () => { ouvintes.importar = undefined; }; },
     abrirLink: async (url) => { window.open(url, "_blank", "noopener"); },
     terminalAbrir: async (nome) => { ouvintes.saida = ouvintes.saida ?? (() => {}); setTimeout(() => ouvintes.saida?.(txt(`Terminal de demonstração do laboratório ${nome}.\r\nNo Windows isto é o Linux de verdade.\r\nroot@${nome}:~# `)), 50); },

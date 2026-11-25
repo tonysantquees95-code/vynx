@@ -13,11 +13,19 @@ pub const IMAGEM: &str = "system-images;android-35;google_apis;x86_64";
 const PASTA_DA_IMAGEM: [&str; 4] = ["system-images", "android-35", "google_apis", "x86_64"];
 
 #[derive(Serialize, Clone, Default, Debug)]
-pub struct Progresso { pub ativo: bool, pub tarefa: String, pub etapa: String, pub detalhe: String, pub erro: Option<String>, pub concluida: bool }
+pub struct Progresso { pub ativo: bool, pub tarefa: String, pub etapa: String, pub detalhe: String, pub erro: Option<String>, pub concluida: bool,
+    /// Segundos (Unix) de quando a tarefa começou e da última mudança de etapa ou detalhe: a tela mostra o tempo e avisa quando fica muito tempo sem novidade.
+    pub inicio: u64, pub noticia: u64, pub passo: u32, pub passos: u32 }
 static PROGRESSO: Mutex<Option<Progresso>> = Mutex::new(None);
 
+fn agora() -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) }
 fn atualizar(f: impl FnOnce(&mut Progresso)) {
-    if let Ok(mut g) = PROGRESSO.lock() { f(g.get_or_insert_with(Progresso::default)); }
+    if let Ok(mut g) = PROGRESSO.lock() {
+        let p = g.get_or_insert_with(Progresso::default);
+        let antes = (p.etapa.clone(), p.detalhe.clone(), p.ativo);
+        f(p);
+        if (p.etapa.clone(), p.detalhe.clone(), p.ativo) != antes { p.noticia = agora(); }
+    }
 }
 pub fn progresso() -> Progresso { PROGRESSO.lock().ok().and_then(|g| g.clone()).unwrap_or_default() }
 
@@ -26,7 +34,7 @@ pub fn tarefa(nome: &str, f: impl FnOnce() -> Result<(), String> + Send + 'stati
     {
         let mut g = PROGRESSO.lock().map_err(|_| "Estado interno bloqueado".to_string())?;
         if g.as_ref().map(|p| p.ativo).unwrap_or(false) { return Err("Já tem uma tarefa em andamento. Espere terminar.".into()); }
-        *g = Some(Progresso { ativo: true, tarefa: nome.into(), etapa: "Começando…".into(), ..Default::default() });
+        *g = Some(Progresso { ativo: true, tarefa: nome.into(), etapa: "Começando…".into(), inicio: agora(), noticia: agora(), ..Default::default() });
     }
     std::thread::spawn(move || {
         let r = f();
@@ -34,7 +42,8 @@ pub fn tarefa(nome: &str, f: impl FnOnce() -> Result<(), String> + Send + 'stati
     });
     Ok(())
 }
-fn etapa(t: &str) { atualizar(|p| { p.etapa = t.into(); p.detalhe.clear(); }); }
+fn etapa(t: &str) { atualizar(|p| { p.etapa = t.into(); p.detalhe.clear(); p.passo += 1; }); }
+fn total_de_passos(n: u32) { atualizar(|p| p.passos = n); }
 
 // ---------- validações (puras) ----------
 pub fn nome_avd_valido(n: &str) -> bool { !n.is_empty() && n.len() <= 40 && n.starts_with("vynx-") && n.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') }
@@ -139,7 +148,23 @@ fn baixar(url: &str, destino: &Path, erro: &str) -> Result<(), String> {
     if let Some(d) = destino.parent() { std::fs::create_dir_all(d).map_err(|e| e.to_string())?; }
     let mut c = Command::new("curl.exe");
     c.args(["-L", "--fail", "--silent", "--show-error", "--retry", "3", "-o"]).arg(destino).arg(url);
-    rodar(&mut c, None, erro)
+    acompanhar_arquivo(destino, || rodar(&mut c, None, erro))
+}
+/// Enquanto `f` roda (um download), mostra quantos MB já chegaram no arquivo: é o que dá para ver se está andando ou parado.
+fn acompanhar_arquivo<T>(arquivo: &Path, f: impl FnOnce() -> T) -> T {
+    use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
+    let fim = Arc::new(AtomicBool::new(false));
+    let (fim2, caminho) = (fim.clone(), arquivo.to_path_buf());
+    let t = std::thread::spawn(move || {
+        while !fim2.load(Ordering::Relaxed) {
+            if let Ok(m) = std::fs::metadata(&caminho) { atualizar(|p| p.detalhe = format!("{:.1} MB baixados", m.len() as f64 / 1_048_576.0)); }
+            std::thread::sleep(std::time::Duration::from_millis(700));
+        }
+    });
+    let r = f();
+    fim.store(true, Ordering::Relaxed);
+    let _ = t.join();
+    r
 }
 fn extrair(zip: &Path, para: &Path, erro: &str) -> Result<(), String> {
     std::fs::create_dir_all(para).map_err(|e| e.to_string())?;
@@ -151,6 +176,7 @@ fn extrair(zip: &Path, para: &Path, erro: &str) -> Result<(), String> {
 pub fn preparar() -> Result<(), String> {
     let p = pastas()?;
     std::fs::create_dir_all(&p.raiz).map_err(|e| e.to_string())?;
+    total_de_passos(2 + if p.java_home().is_none() { 2 } else { 0 } + if p.sdkmanager().exists() { 0 } else { 2 });
     if p.java_home().is_none() {
         etapa("Baixando o Java (necessário para as ferramentas do Android)…");
         let z = p.baixados.join("jdk.zip");
@@ -258,6 +284,7 @@ pub fn instalar(url: &str, pacote: &str, token: Option<&str>) -> Result<(), Stri
     if !pacote_valido(pacote) { return Err("Pacote inválido".into()); }
     let p = pastas()?;
     if !p.adb().exists() { return Err("Prepare o emulador primeiro".into()); }
+    total_de_passos(4);
     etapa("Baixando o APK…");
     let apk = p.baixados.join(format!("{pacote}.apk"));
     if privado {
@@ -265,13 +292,14 @@ pub fn instalar(url: &str, pacote: &str, token: Option<&str>) -> Result<(), Stri
         let mut c = Command::new("curl.exe");
         c.args(["-L", "--fail", "--silent", "--show-error", "--retry", "3", "-K", "-", "-o"]).arg(&apk).arg(url);
         let cfg = format!("header = \"Authorization: Bearer {}\"\nheader = \"Accept: application/octet-stream\"\n", token.unwrap_or(""));
-        rodar(&mut c, Some(&cfg), "Não consegui baixar o APK (confira se o token tem acesso ao repositório)")?;
+        acompanhar_arquivo(&apk, || rodar(&mut c, Some(&cfg), "Não consegui baixar o APK (confira se o token tem acesso ao repositório)"))?;
     } else {
         baixar(url, &apk, "Não consegui baixar o APK")?;
     }
     etapa("Esperando o emulador ficar pronto…");
     let mut pronto = false;
-    for _ in 0..90 {
+    for i in 0..90 {
+        atualizar(|p| p.detalhe = format!("Esperando o Android terminar de ligar… {} s (a primeira vez demora)", i * 2));
         let o = adb(&p, &["shell", "getprop", "sys.boot_completed"]).output().map_err(|e| e.to_string())?;
         if String::from_utf8_lossy(&o.stdout).trim() == "1" { pronto = true; break; }
         std::thread::sleep(std::time::Duration::from_secs(2));

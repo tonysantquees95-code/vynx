@@ -24,6 +24,10 @@ export const NOVIDADES: Novidade[] = [
   { id: 17, data: "2026-11-24", tipo: "novo", titulo: "Mesa de trabalho", texto: "Ao abrir o Vynx você vê a mesa de trabalho com atalhos para todos os apps. Toque num atalho para abrir a janela; toque no app do dock que está na frente para minimizar e voltar à mesa." },
   { id: 18, data: "2026-11-24", tipo: "novo", titulo: "Terminal dentro do Vynx", texto: "Novo app Terminal: escolha o laboratório, toque em Conectar e use o Linux numa janela do Vynx, com o visual do app. Tem botão para abrir o Claude direto. Ele não enxerga os arquivos do Windows." },
   { id: 19, data: "2026-11-24", tipo: "melhoria", titulo: "Você vê a importação andando", texto: "Ao importar os projetos para o laboratório, a janela agora mostra uma barra de andamento (projeto 3 de 12) e o registro do que está sendo baixado, em vez de ficar parada." },
+  { id: 20, data: "2026-11-25", tipo: "novo", titulo: "Visual novo, parecido com o Linux", texto: "Barra lateral mais fina só com ícones, Ajustes lá embaixo e um botão de aplicativos. Em tela cheia a barra do Windows some (F11 ou o botão no topo volta ao normal)." },
+  { id: 21, data: "2026-11-25", tipo: "novo", titulo: "Uso do computador no topo", texto: "Faixa com processador, placa de vídeo e memória, em verde, amarelo ou vermelho. Toque nela para ver detalhes e use o botão Liberar para soltar memória." },
+  { id: 22, data: "2026-11-25", tipo: "novo", titulo: "Arquivos, Vindex e Velox Pro", texto: "Novo app Arquivos: mostra os projetos importados e abre a pasta no Windows. Vindex e Velox Pro agora têm atalho aqui dentro: abrem numa janela própria, ao lado do Vynx." },
+  { id: 23, data: "2026-11-25", tipo: "melhoria", titulo: "Andamento claro na importação e no Android", texto: "Agora aparecem a etapa, o tempo decorrido e um aviso quando passa muito tempo sem novidade. Dá para cancelar a importação. No Android mostra quanto já foi baixado." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

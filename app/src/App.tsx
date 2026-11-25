@@ -9,6 +9,8 @@ import { Laboratorio } from "./telas/Laboratorio";
 import { Terminal } from "./telas/Terminal";
 import { Android } from "./telas/Android";
 import { Documentos } from "./telas/Documentos";
+import { Arquivos } from "./telas/Arquivos";
+import { Externo } from "./telas/Externo";
 import { PainelDev } from "./telas/PainelDev";
 import { Ajustes } from "./telas/Ajustes";
 import { Entrar } from "./telas/Entrar";
@@ -34,7 +36,9 @@ export default function App() {
       if (id === "terminal") return <Terminal />;
       if (id === "android") return <Android />;
       if (id === "painel") return <PainelDev aoMudarConexao={() => setGithub(temToken())} />;
+      if (id === "arquivos") return <Arquivos ir={abrirApp} />;
       if (id === "documentos") return <Documentos />;
+      if (id === "vindex" || id === "velox") return <Externo id={id} />;
       return <Ajustes aoDesconectarGithub={() => setGithub(false)} sessao={sessao} aoSair={() => { void sair().then(() => { setSessao(null); setGithub(false); }); }} />;
     }} />
   );

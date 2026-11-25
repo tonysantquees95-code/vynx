@@ -4,10 +4,11 @@
 
 mod android;
 mod atualizar;
+mod metricas;
 mod terminal;
 
 use serde::Serialize;
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -158,6 +159,7 @@ async fn importar_projetos(app: tauri::AppHandle, nome: String, token: String) -
     let completo = format!("{PREFIXO}{nome}");
     tauri::async_runtime::spawn_blocking(move || {
         use std::io::Write;
+        let _ = app.emit("importar-linha", "Ligando o laboratório (na primeira vez, num computador lento, pode levar um minuto)…");
         let mut c = Command::new("wsl.exe");
         c.args(["-d", &completo, "-u", "root", "--", "bash", "-c", "read -r GH_TOKEN; export GH_TOKEN; cat > /tmp/vynx-importar.sh; bash /tmp/vynx-importar.sh < /dev/null; R=$?; rm -f /tmp/vynx-importar.sh; exit $R"]);
         c.stdin(std::process::Stdio::piped()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
@@ -185,11 +187,68 @@ async fn importar_projetos(app: tauri::AppHandle, nome: String, token: String) -
     }).await.map_err(|e| e.to_string())?
 }
 
+/// Cancela a importação: desliga o laboratório, o que encerra o script que está rodando lá dentro.
+#[tauri::command]
+async fn importar_cancelar(nome: String) -> Result<(), String> {
+    if !nome_valido(&nome) { return Err("Nome inválido".into()); }
+    let completo = format!("{PREFIXO}{nome}");
+    tauri::async_runtime::spawn_blocking(move || rodar(wsl().args(["--terminate", &completo]), "Não consegui parar a importação")).await.map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 fn abrir_link(url: String) -> Result<(), String> {
     if !url.starts_with("https://") || url.chars().any(|c| c.is_whitespace() || matches!(c, '"' | '^' | '&' | '|' | '<' | '>')) { return Err("Só abro links https".into()); }
     Command::new("rundll32").args(["url.dll,FileProtocolHandler", &url]).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
+
+// ---------- Arquivos: ver os projetos importados e abrir a pasta no Windows ----------
+/// Nomes de pasta que o `ls` devolveu: só nomes simples (sem barra, sem ponto no começo).
+fn nomes_de_projetos(saida: &str) -> Vec<String> {
+    saida.lines().map(|l| l.trim()).filter(|l| !l.is_empty() && !l.starts_with('.') && l.len() <= 100 && l.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))).map(String::from).collect()
+}
+#[tauri::command]
+async fn projetos_listar(nome: String) -> Result<Vec<String>, String> {
+    if !nome_valido(&nome) { return Err("Nome inválido".into()); }
+    tauri::async_runtime::spawn_blocking(move || {
+        let completo = format!("{PREFIXO}{nome}");
+        let s = wsl().args(["-d", &completo, "-u", "root", "--", "ls", "-1", "/root/projetos"]).output().map_err(|e| e.to_string())?;
+        if !s.status.success() { return Ok(vec![]); }
+        Ok(nomes_de_projetos(&String::from_utf8_lossy(&s.stdout)))
+    }).await.map_err(|e| e.to_string())?
+}
+/// Abre `/root/projetos` do laboratório no Explorador do Windows (o WSL mostra os arquivos em \\wsl.localhost\<distro>).
+#[tauri::command]
+fn pasta_abrir(nome: String) -> Result<(), String> {
+    if !nome_valido(&nome) { return Err("Nome inválido".into()); }
+    let caminho = format!("\\\\wsl.localhost\\{PREFIXO}{nome}\\root\\projetos");
+    Command::new("explorer.exe").arg(caminho).spawn().map(|_| ()).map_err(|e| e.to_string())
+}
+
+// ---------- Apps da suíte (abrem como janelas do Windows, ao lado do Vynx) ----------
+/// Onde o instalador de cada app coloca o programa (instalação só para o usuário). Só estes dois nomes são aceitos.
+fn caminho_externo(id: &str) -> Option<PathBuf> {
+    let sub = match id { "vindex" => "Vindex\\Vindex.exe", "velox" => "Velox\\Velox.exe", _ => return None };
+    let base = std::env::var("LOCALAPPDATA").ok()?;
+    Some(PathBuf::from(base).join("Programs").join(sub))
+}
+#[tauri::command]
+fn externo_instalado(id: String) -> bool { caminho_externo(&id).map(|p| p.exists()).unwrap_or(false) }
+#[tauri::command]
+fn externo_abrir(id: String) -> Result<(), String> {
+    let p = caminho_externo(&id).ok_or("App desconhecido")?;
+    if !p.exists() { return Err("Esse app ainda não está instalado".into()); }
+    Command::new(p).spawn().map(|_| ()).map_err(|e| format!("Não consegui abrir: {e}"))
+}
+
+// ---------- Tela cheia (some a barra de tarefas do Windows) ----------
+#[tauri::command]
+fn tela_cheia(app: tauri::AppHandle, ativar: bool) -> Result<bool, String> {
+    let j = app.get_webview_window("main").ok_or("Janela não encontrada")?;
+    j.set_fullscreen(ativar).map_err(|e| e.to_string())?;
+    j.is_fullscreen().map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn tela_cheia_estado(app: tauri::AppHandle) -> bool { app.get_webview_window("main").and_then(|j| j.is_fullscreen().ok()).unwrap_or(false) }
 
 // ---------- Emulador de Android ----------
 #[tauri::command]
@@ -247,15 +306,47 @@ fn atualizar_instalar(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn metricas() -> metricas::Metricas { metricas::ler() }
+
+/// Libera memória: encolhe o próprio Vynx e, só se a pessoa pediu, encerra os laboratórios ligados (`wsl --terminate`, só os `vynx-lab-*`).
+#[tauri::command]
+async fn liberar_ram(encerrar_labs: bool) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let antes = metricas::ler().ram_usada_mb;
+        let mut encerrados = 0;
+        if encerrar_labs {
+            for d in lista().unwrap_or_default() {
+                if d.nome.starts_with(PREFIXO) && d.estado == "Running" && rodar(wsl().arg("--terminate").arg(&d.nome), "Não consegui encerrar").is_ok() { encerrados += 1; }
+            }
+        }
+        metricas::encolher();
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        let depois = metricas::ler().ram_usada_mb;
+        let livre = antes.saturating_sub(depois);
+        Ok(format!("{encerrados} laboratório(s) encerrado(s). Memória liberada: {livre} MB."))
+    }).await.map_err(|e| e.to_string())?
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura, atualizar_baixar, atualizar_progresso, atualizar_instalar, terminal_abrir, terminal_escrever, terminal_fechar])
+        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, importar_cancelar, metricas, liberar_ram, projetos_listar, pasta_abrir, externo_instalado, externo_abrir, tela_cheia, tela_cheia_estado, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura, atualizar_baixar, atualizar_progresso, atualizar_instalar, terminal_abrir, terminal_escrever, terminal_fechar])
         .run(tauri::generate_context!())
         .expect("erro ao abrir o Vynx OS");
 }
 
 #[cfg(test)]
 mod testes {
+    #[test]
+    fn lista_de_projetos_so_aceita_nomes_simples() {
+        assert_eq!(super::nomes_de_projetos("vynx\nvindex\n.git\n../x\nbom nome\n\nvenus-core\n"), vec!["vynx", "vindex", "venus-core"]);
+    }
+    #[test]
+    fn so_dois_apps_externos() {
+        assert!(super::caminho_externo("vindex").is_some() || std::env::var("LOCALAPPDATA").is_err());
+        assert!(super::caminho_externo("cmd").is_none());
+        assert!(super::caminho_externo("../x").is_none());
+    }
     #[test]
     fn importador_nao_guarda_token_no_repositorio() {
         assert!(super::IMPORTAR_PROJETOS.contains("http.extraheader"));

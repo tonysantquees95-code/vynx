@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { andamentoDaLinha, bases, laboratorios, limparNome, nomeValido, type EstadoWsl } from "../laboratorio";
+import { bases, laboratorios, limparNome, nomeValido, type EstadoWsl } from "../laboratorio";
 import { ponte } from "../ponte";
+import { lerLinha, porcentagem } from "../andamento";
+import { Andamento } from "./Andamento";
 
 const PRINCIPAL = "principal";
 
@@ -15,10 +17,16 @@ export function Laboratorio() {
   const [descartar, setDescartar] = useState<string | null>(null);
   const [aviso, setAviso] = useState("");
   const [linhas, setLinhas] = useState<string[]>([]);
+  const [marcas, setMarcas] = useState({ inicio: 0, noticia: 0, vivo: null as number | null });
+  const [labAtual, setLabAtual] = useState("");
   const fim = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let parar: (() => void) | null = null, vivo = true;
-    void ponte.importarOuvir((l) => setLinhas((x) => [...x.slice(-199), l])).then((p) => { if (vivo) parar = p; else p(); });
+    void ponte.importarOuvir((l) => {
+      const agora = Date.now(), k = lerLinha(l);
+      setMarcas((m) => ({ ...m, vivo: agora, noticia: k.tipo === "vivo" ? m.noticia : agora }));
+      if (k.tipo !== "vivo") setLinhas((x) => [...x.slice(-199), l]);
+    }).then((p) => { if (vivo) parar = p; else p(); });
     return () => { vivo = false; parar?.(); };
   }, []);
   useEffect(() => { fim.current?.scrollIntoView({ block: "nearest" }); }, [linhas]);
@@ -31,6 +39,7 @@ export function Laboratorio() {
 
   const executar = async (rotulo: string, f: () => Promise<void>) => {
     setOcupado(rotulo); setErro(""); setLinhas([]);
+    const t0 = Date.now(); setMarcas({ inicio: t0, noticia: t0, vivo: null });
     try { await f(); await ler(); } catch (e) { setErro(String(e)); } finally { setOcupado(""); }
   };
 
@@ -38,6 +47,7 @@ export function Laboratorio() {
     setAviso("");
     const token = (() => { try { return localStorage.getItem("vynx.github.token") ?? ""; } catch { return ""; } })();
     if (!token) { setErro("Conecte o GitHub no Painel Dev antes de importar os projetos."); return; }
+    setLabAtual(lab);
     await executar("Importando os projetos", async () => { setAviso(await ponte.importarProjetos(lab, token)); });
   };
 
@@ -48,7 +58,7 @@ export function Laboratorio() {
     await executar("Montando o laboratório principal", async () => {
       setAviso("1 de 3: criando o Linux…");
       await ponte.criarLaboratorio(base, PRINCIPAL);
-      setAviso("2 de 3: trazendo os seus projetos do GitHub…");
+      setAviso("2 de 3: trazendo os seus projetos do GitHub…"); setLabAtual(PRINCIPAL);
       const r = await ponte.importarProjetos(PRINCIPAL, token);
       setAviso(`${r} 3 de 3: abrindo o terminal que instala o Claude. Quando ele terminar, digite claude.`);
       await ponte.instalarClaude(PRINCIPAL);
@@ -83,17 +93,19 @@ export function Laboratorio() {
       </div>
       {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
       {aviso && <p role="status" className="rounded-xl border border-neon/40 bg-painel p-3 text-sm text-neon">{aviso}</p>}
-      {ocupado && <p role="status" className="rounded-xl border border-borda bg-painel p-3 text-sm text-suave">{ocupado}… isso pode levar alguns minutos.</p>}
-      {ocupado && linhas.length > 0 && (() => {
-        const a = [...linhas].reverse().map(andamentoDaLinha).find(Boolean);
-        const pct = a ? Math.round((a.atual / a.total) * 100) : 0;
+      {ocupado && (() => {
+        let etapa = "", ep = 0, ets = 0, pa = 0, pt = 0;
+        for (const l of linhas) { const k = lerLinha(l); if (k.tipo === "etapa") { etapa = k.texto; ep = k.atual; ets = k.total; } else if (k.tipo === "projeto") { pa = k.atual; pt = k.total; } }
+        const pct = ets ? porcentagem(ep, ets, ep === 3 && pt ? (pa - 1) / pt : 0) : null;
+        const sempre = ocupado.startsWith("Importando") || ocupado.startsWith("Montando");
         return (
-          <div className="space-y-2 rounded-xl border border-borda bg-painel p-3">
-            {a && <div className="space-y-1"><div className="h-2.5 w-full overflow-hidden rounded-full bg-fundo" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Andamento da importação"><div className="h-full rounded-full bg-neon transition-all" style={{ width: `${pct}%` }} /></div><p className="text-xs text-suave">Projeto {a.atual} de {a.total} · {pct}%</p></div>}
-            <div role="log" aria-label="Andamento" className="mono rolagem max-h-40 overflow-y-auto rounded-lg bg-fundo p-2 text-xs text-suave">
-              {linhas.slice(-40).map((l, i) => <div key={i} className="break-words">{l}</div>)}<div ref={fim} />
-            </div>
-          </div>
+          <Andamento titulo={ocupado} etapa={etapa ? `Etapa ${ep} de ${ets}: ${etapa}${ep === 3 && pt ? ` (projeto ${pa} de ${pt})` : ""}` : "Começando…"} detalhe={linhas[linhas.length - 1]}
+            inicio={marcas.inicio} noticia={marcas.noticia} vivo={marcas.vivo} porcentagem={pct}
+            aoCancelar={sempre && labAtual ? () => { void ponte.importarCancelar(labAtual).catch((e) => setErro(String(e))); } : undefined} rotuloCancelar="Cancelar importação"
+            filhos={linhas.length > 0 ? (
+              <div role="log" aria-label="Andamento" className="mono rolagem max-h-40 overflow-y-auto rounded-lg bg-fundo p-2 text-xs text-suave">
+                {linhas.slice(-40).map((l, i) => <div key={i} className="break-words">{l}</div>)}<div ref={fim} />
+              </div>) : undefined} />
         );
       })()}
       {!labs.some((l) => l.nome === PRINCIPAL) && opcoes.length > 0 && (

@@ -40,6 +40,12 @@
 ## Claude dentro do laboratório
 - Laboratório › "Instalar Claude" (`instalar_claude`, texto fixo `INSTALAR_CLAUDE` em `main.rs`, sem caracteres especiais do cmd) abre um terminal que instala o Claude Code como root no laboratório pelo instalador oficial (`claude.ai/install.sh`, sem Node/npm: `apt install npm` puxava 200+ pacotes e levava minutos) e liga `/usr/local/bin/claude`. "Importar projetos" (`importar_projetos`, script `importar.sh`) clona os repositórios da conta em `/root/projetos` usando o token do Painel Dev (vai pela entrada padrão, não fica no `.git`) e gera `PROJETOS.md`, `CLAUDE.md` e o comando `/projetos`. O andamento da importação aparece na janela Laboratório (o script imprime `[n/total] projeto`; o Rust manda cada linha pelo evento `importar-linha`; `andamentoDaLinha` em `laboratorio.ts` lê o número). Aba Documentos = página `/pdf/` do servidor numa janela (`telas/Documentos.tsx`). Só dá para testar de verdade no Windows.
 
+## Faixa de uso, tela cheia, Arquivos e apps da suíte
+- Faixa no topo (`telas/Faixa.tsx`, lógica pura em `metricas.ts`): CPU/RAM vêm de kernel32 e a GPU de um `typeperf` ligado (`desktop/src-tauri/src/metricas.rs`); `liberar_ram` encolhe o próprio Vynx e, só se a pessoa marcar, encerra labs `vynx-lab-*` ligados. Nunca mexe em programas de fora.
+- Tela cheia (`tela_cheia` no `main.rs`, F11 e botão no topo): abre assim na primeira vez, a escolha fica em `vynx.telacheia`.
+- Arquivos (`telas/Arquivos.tsx`): `projetos_listar` (`ls /root/projetos` no lab) e `pasta_abrir` (Explorador em `\\wsl.localhost\...`). Vindex e Velox Pro (`telas/Externo.tsx`): `externo_instalado/abrir` só aceitam esses dois, em `%LOCALAPPDATA%\Programs\`. Abrem como janelas do Windows, não embutidos.
+- Andamento (`andamento.ts` + `telas/Andamento.tsx`): tempo, etapa, aviso "sem novidade há X" e Cancelar; as linhas "… vivo" do `importar.sh` são sinal de vida, não progresso. Só dá para testar de verdade no Windows.
+
 ## Painel Dev
 - Token do GitHub só em `localStorage` (`vynx.github.token`); nunca é ENVIADO ao servidor (o administrador só o RECEBE dele). Lógica pura e testada em `github.ts`.
 

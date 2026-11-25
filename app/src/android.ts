@@ -3,7 +3,7 @@ export interface EstadoAndroid {
   jdk: boolean; ferramentas: boolean; emulador: boolean; imagem: boolean; preparado: boolean;
   celulares: string[]; ligado: string | null; pronto: boolean; aceleracao: boolean | null;
 }
-export interface ProgressoAndroid { ativo: boolean; tarefa: string; etapa: string; detalhe: string; erro: string | null; concluida: boolean }
+export interface ProgressoAndroid { ativo: boolean; tarefa: string; etapa: string; detalhe: string; erro: string | null; concluida: boolean; inicio?: number; noticia?: number; passo?: number; passos?: number }
 
 export const PERFIS = [
   { id: "celular", rotulo: "Celular", texto: "Pixel 6, tela comum de hoje" },
