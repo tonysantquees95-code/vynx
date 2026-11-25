@@ -56,7 +56,7 @@ export function Faixa() {
       <Pilula rotulo="RAM" pct={r} aoToque={alterna} aberto={aberto} />
       <button onClick={() => { setAberto(true); void liberar(); }} disabled={liberando} className="min-h-8 rounded-full border border-neon/60 px-2.5 text-[11px] font-bold text-neon disabled:opacity-50">{liberando ? "Liberando…" : "Liberar"}</button>
       {aberto && m && (
-        <div role="dialog" aria-label="Uso do computador" className="absolute right-0 top-full z-50 mt-2 w-[min(320px,92vw)] space-y-3 rounded-2xl border border-borda bg-painel p-4 shadow-2xl shadow-black/50">
+        <div role="dialog" aria-label="Uso do computador" className="fixed inset-x-2 top-11 z-50 space-y-3 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[320px] rounded-2xl border border-borda bg-painel p-4 shadow-2xl shadow-black/50">
           <Linha rotulo="Processador (CPU)" pct={m.cpu} />
           <Linha rotulo="Placa de vídeo (GPU)" pct={m.gpu} extra={m.gpu === null ? "este Windows não informa" : undefined} />
           <Linha rotulo="Memória (RAM)" pct={r} extra={`${gb(m.ram_usada_mb)} de ${gb(m.ram_total_mb)}`} />

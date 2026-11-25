@@ -14,6 +14,7 @@ export default {
   espera: 800,
   guardado: (modo) => modo === "primeira" ? {} : {
     "vynx.tour": "1", "vynx.termos": TERMOS,
+    ...(modo.startsWith("ld-") ? {} : { "vynx.android.motor": "oficial" }),
     ...(modo === "sem-conta" ? {} : { "vynx.sessao": JSON.stringify({ token: "teste", email: "dev@exemplo.com", nome: "Dev", admin: false }) }),
     "vynx.novidades.vistas": modo === "atualizou" ? "0" : "9999",
     ...(modo === "sem-wsl" ? { "vynx.demo.wsl": semWsl } : {}),
@@ -22,9 +23,19 @@ export default {
     ...(modo === "android-desligado" ? { "vynx.demo.android": andDesligado } : {}),
     ...(modo === "com-lab" ? { "vynx.demo.wsl": comLab } : {}),
     ...(modo === "com-projetos" ? { "vynx.demo.wsl": comLab, "vynx.demo.projetos": JSON.stringify(["venus-core", "vindex", "vortex", "voxix", "vynx"]), "vynx.demo.velox": "1" } : {}),
+    ...(modo === "ld-sem" ? { "vynx.demo.ld": JSON.stringify({ instalado: false }) } : {}),
+    ...(modo === "ld-pronto" ? { "vynx.demo.ld": JSON.stringify({ instalado: true, instancia: true, ligada: true, pronta: true }) } : {}),
+    ...(modo === "painel-conectado" ? { "vynx.github.token": "ghp_testetestetestetesteteste" } : {}),
     ...(modo === "com-lab-token" ? { "vynx.demo.wsl": comLab, "vynx.github.token": "ghp_testetestetestetesteteste" } : {}),
   },
   respostas: { "/user/repos": [], "/atualizacao": {} },
+  // respostas por padrão de endereço (o GitHub): versões e builds de exemplo, com um build quebrado e outro rodando
+  respostasPorPadrao: [
+    [/\/repos\/[^/]+\/vynx\/actions\/runs/, { workflow_runs: [{ id: 11, name: "Vynx OS", head_branch: "main", status: "completed", conclusion: "failure", created_at: new Date(Date.now() - 3600e3).toISOString(), html_url: "https://github.com/x/y/actions/runs/11" }, { id: 12, name: "Vynx OS", head_branch: "main", status: "completed", conclusion: "success", created_at: new Date(Date.now() - 86400e3).toISOString(), html_url: "https://github.com/x/y/actions/runs/12" }] }],
+    [/\/repos\/[^/]+\/Vortex\/actions\/runs/, { workflow_runs: [{ id: 21, name: "Vortex", head_branch: "main", status: "in_progress", conclusion: null, created_at: new Date(Date.now() - 600e3).toISOString(), html_url: "https://github.com/x/y/actions/runs/21" }] }],
+    [/\/actions\/runs/, { workflow_runs: [{ id: 31, name: "App", head_branch: "main", status: "completed", conclusion: "success", created_at: new Date(Date.now() - 7200e3).toISOString(), html_url: "https://github.com/x/y/actions/runs/31" }, { id: 32, name: "App", head_branch: "main", status: "completed", conclusion: "success", created_at: new Date(Date.now() - 172800e3).toISOString(), html_url: "https://github.com/x/y/actions/runs/32" }] }],
+    [/\/releases/, [{ tag_name: "1.42", name: "1.42", draft: false, published_at: new Date(Date.now() - 5 * 3600e3).toISOString(), assets: [{ name: "App.apk", size: 9000000, url: "https://api.github.com/repos/tonysantquees95-code/x/releases/assets/1", browser_download_url: "https://github.com/tonysantquees95-code/x/releases/download/1.42/App.apk" }] }]],
+  ],
   cenarios: [
     ["primeira-abertura", "primeira", async () => {}],
     ["o-que-ha-de-novo", "atualizou", async (p) => { await p.getByText("O que há de novo").first().waitFor(); }],
@@ -51,6 +62,9 @@ export default {
     ["arquivos-importados", "com-projetos", async (p, a) => { await a.aba(p, "Arquivos"); await p.getByText("5 projetos importados").waitFor(); }],
     ["vindex-nao-instalado", "normal", async (p, a) => { await a.aba(p, "Vindex"); await p.getByRole("button", { name: "Baixar o Vindex" }).waitFor(); }],
     ["velox-instalado", "com-projetos", async (p, a) => { await a.aba(p, "Velox Pro"); await p.getByText("Velox Pro está instalado").waitFor(); }],
+    ["ld-nao-instalado", "ld-sem", async (p, a) => { await a.aba(p, "Android"); await p.getByRole("heading", { name: "1. Instalar o LDPlayer" }).waitFor(); await p.getByRole("button", { name: "Abrir o site do LDPlayer" }).waitFor(); }],
+    ["ld-pronto", "ld-pronto", async (p, a) => { await a.aba(p, "Android"); await p.getByRole("heading", { name: "Testar um app" }).waitFor(); await p.getByRole("button", { name: "Testar" }).first().waitFor(); }],
+    ["painel-dev-conectado", "painel-conectado", async (p, a) => { await a.aba(p, "Painel Dev"); await p.getByRole("region", { name: "Resumo" }).waitFor(); await p.getByText("Builds quebrados").first().waitFor(); await p.getByRole("button", { name: /^Vortex/ }).click(); await p.getByRole("region", { name: "Versões" }).waitFor(); }],
     ["feedback", "normal", async (p, a) => { await a.aba(p, "Ajustes"); await p.getByRole("button", { name: "Enviar feedback" }).click(); await p.getByText(/^FEEDBACK/).waitFor(); await p.waitForTimeout(300); }],
   ],
 };

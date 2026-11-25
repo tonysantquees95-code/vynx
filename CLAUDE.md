@@ -26,6 +26,11 @@
 - Demonstração (navegador e teste visual): `localStorage "vynx.demo.android"` = `{preparado, celulares, ligado, pronto}`. Mudou a interface do plugin? Ajuste `ponte.ts`.
 - Só dá para testar de verdade no Windows com virtualização ligada (WHPX/Hyper-V).
 
+## LDPlayer e "Testar no Android"
+- `desktop/src-tauri/src/ldplayer.rs`: acha o `ldconsole.exe` (C:\LDPlayer\LDPlayer9 etc.), cria a instância "Vynx" (2 núcleos, 2 GB, 540x960; nunca mexe nas outras), liga e espera o Android (`list2`), `installapp` e `runapp`. O Vynx NÃO instala o LDPlayer (terceiro, licença própria): a tela leva ao site. Andamento pelo mesmo `android_progresso`. Lógica pura testada (`ler_lista`, `candidatos`).
+- `app/src/testar.ts` (`testarNoAndroid`) é o caminho único de "Testar": escolhe o motor (`escolherMotor` em `android.ts`; preferência `vynx.android.motor`, padrão LDPlayer) e liga sozinho se estiver fechado. Aba Android: `AndroidLd` e `AndroidOficial`. Demo: `localStorage "vynx.demo.ld"`. Só dá para testar de verdade no Windows com o LDPlayer instalado.
+- Painel Dev (`telas/PainelDev.tsx`, lógica em `painel.ts`): resumo de todos os apps (releases + `actions/runs`), indicadores, builds quebrados e atividade. O teste visual simula o GitHub por padrão de endereço (`respostasPorPadrao`).
+
 ## Casca do sistema (barra, dock e janelas)
 - `app/src/telas/Casca.tsx` monta a barra do topo, o dock (`nav` "Seções", um botão por app, o da frente fica preenchido e o aberto leva um ponto) e as janelas. Lógica pura em `app/src/janelas.ts` (abrir/focar/mover/minimizar/maximizar, sempre dentro da área; testada em `teste/janelas.test.mjs`). Abaixo de 900 px de largura cada app ocupa a tela toda e o dock vai para baixo. As janelas continuam montadas ao minimizar (não perdem o estado).
 - Mesa de trabalho: camada atrás das janelas (`region` "Mesa de trabalho") com um atalho por app (`APPS`); nenhuma janela abre sozinha. Tocar no app da frente no dock minimiza (volta à mesa), em qualquer tamanho.

@@ -19,7 +19,7 @@ pub struct Progresso { pub ativo: bool, pub tarefa: String, pub etapa: String, p
 static PROGRESSO: Mutex<Option<Progresso>> = Mutex::new(None);
 
 fn agora() -> u64 { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) }
-fn atualizar(f: impl FnOnce(&mut Progresso)) {
+pub fn atualizar(f: impl FnOnce(&mut Progresso)) {
     if let Ok(mut g) = PROGRESSO.lock() {
         let p = g.get_or_insert_with(Progresso::default);
         let antes = (p.etapa.clone(), p.detalhe.clone(), p.ativo);
@@ -42,8 +42,8 @@ pub fn tarefa(nome: &str, f: impl FnOnce() -> Result<(), String> + Send + 'stati
     });
     Ok(())
 }
-fn etapa(t: &str) { atualizar(|p| { p.etapa = t.into(); p.detalhe.clear(); p.passo += 1; }); }
-fn total_de_passos(n: u32) { atualizar(|p| p.passos = n); }
+pub fn etapa(t: &str) { atualizar(|p| { p.etapa = t.into(); p.detalhe.clear(); p.passo += 1; }); }
+pub fn total_de_passos(n: u32) { atualizar(|p| p.passos = n); }
 
 // ---------- validações (puras) ----------
 pub fn nome_avd_valido(n: &str) -> bool { !n.is_empty() && n.len() <= 40 && n.starts_with("vynx-") && n.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') }
@@ -85,7 +85,7 @@ impl Pastas {
         self
     }
 }
-fn sem_janela(c: &mut Command) -> &mut Command {
+pub fn sem_janela(c: &mut Command) -> &mut Command {
     #[cfg(windows)]
     { use std::os::windows::process::CommandExt; c.creation_flags(0x0800_0000); }
     c
@@ -274,21 +274,18 @@ pub fn url_asset_valida(u: &str) -> bool {
         .map(|(repo, id)| !repo.is_empty() && repo.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')) && !id.is_empty() && id.chars().all(|c| c.is_ascii_digit()))
         .unwrap_or(false)
 }
-fn token_valido(t: &str) -> bool { t.len() >= 20 && t.len() <= 255 && t.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') }
+pub fn token_valido(t: &str) -> bool { t.len() >= 20 && t.len() <= 255 && t.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') }
 
 /// Baixa o APK da release, instala no emulador ligado e abre o app.
-pub fn instalar(url: &str, pacote: &str, token: Option<&str>) -> Result<(), String> {
+/// Valida e baixa o APK de um app da suíte (público ou privado, com o token pela entrada padrão do curl). Devolve o caminho do arquivo.
+pub fn baixar_apk(url: &str, pacote: &str, token: Option<&str>) -> Result<PathBuf, String> {
     let privado = url_asset_valida(url);
     if !privado && !url_apk_valida(url) { return Err("Endereço de APK não aceito".into()); }
     if privado && !token.map(token_valido).unwrap_or(false) { return Err("Para baixar esse app, conecte o GitHub no Painel Dev.".into()); }
     if !pacote_valido(pacote) { return Err("Pacote inválido".into()); }
     let p = pastas()?;
-    if !p.adb().exists() { return Err("Prepare o emulador primeiro".into()); }
-    total_de_passos(4);
-    etapa("Baixando o APK…");
     let apk = p.baixados.join(format!("{pacote}.apk"));
     if privado {
-        // o token vai pela entrada padrão do curl (nunca na linha de comando); o curl não repassa o cabeçalho ao endereço assinado para onde o GitHub redireciona
         let mut c = Command::new("curl.exe");
         c.args(["-L", "--fail", "--silent", "--show-error", "--retry", "3", "-K", "-", "-o"]).arg(&apk).arg(url);
         let cfg = format!("header = \"Authorization: Bearer {}\"\nheader = \"Accept: application/octet-stream\"\n", token.unwrap_or(""));
@@ -296,9 +293,18 @@ pub fn instalar(url: &str, pacote: &str, token: Option<&str>) -> Result<(), Stri
     } else {
         baixar(url, &apk, "Não consegui baixar o APK")?;
     }
+    Ok(apk)
+}
+
+pub fn instalar(url: &str, pacote: &str, token: Option<&str>) -> Result<(), String> {
+    let p = pastas()?;
+    if !p.adb().exists() { return Err("Prepare o emulador primeiro".into()); }
+    total_de_passos(4);
+    etapa("Baixando o APK…");
+    let apk = baixar_apk(url, pacote, token)?;
     etapa("Esperando o emulador ficar pronto…");
     let mut pronto = false;
-    for i in 0..90 {
+    for i in 0..360 {
         atualizar(|p| p.detalhe = format!("Esperando o Android terminar de ligar… {} s (a primeira vez demora)", i * 2));
         let o = adb(&p, &["shell", "getprop", "sys.boot_completed"]).output().map_err(|e| e.to_string())?;
         if String::from_utf8_lossy(&o.stdout).trim() == "1" { pronto = true; break; }

@@ -28,6 +28,9 @@ export const NOVIDADES: Novidade[] = [
   { id: 21, data: "2026-11-25", tipo: "novo", titulo: "Uso do computador no topo", texto: "Faixa com processador, placa de vídeo e memória, em verde, amarelo ou vermelho. Toque nela para ver detalhes e use o botão Liberar para soltar memória." },
   { id: 22, data: "2026-11-25", tipo: "novo", titulo: "Arquivos, Vindex e Velox Pro", texto: "Novo app Arquivos: mostra os projetos importados e abre a pasta no Windows. Vindex e Velox Pro agora têm atalho aqui dentro: abrem numa janela própria, ao lado do Vynx." },
   { id: 23, data: "2026-11-25", tipo: "melhoria", titulo: "Andamento claro na importação e no Android", texto: "Agora aparecem a etapa, o tempo decorrido e um aviso quando passa muito tempo sem novidade. Dá para cancelar a importação. No Android mostra quanto já foi baixado." },
+  { id: 24, data: "2026-11-25", tipo: "novo", titulo: "LDPlayer, o emulador leve", texto: "Na aba Android agora dá para escolher o LDPlayer, um emulador feito para computador fraco. O Vynx cria um celular virtual leve, liga e instala os apps. Você só precisa instalar o LDPlayer uma vez (o botão leva ao site oficial)." },
+  { id: 25, data: "2026-11-25", tipo: "melhoria", titulo: "Testar já liga o celular sozinho", texto: "Ao tocar em Testar (no Painel Dev ou na aba Android) com o emulador fechado, o Vynx liga o celular virtual, instala o app e abre, sem pedir para voltar e ligar antes." },
+  { id: 26, data: "2026-11-25", tipo: "melhoria", titulo: "Painel Dev mais completo", texto: "Agora mostra todos os apps de uma vez: situação do build (verde, amarelo ou vermelho), última versão, os últimos builds e a atividade recente. Builds quebrados aparecem em destaque no topo." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

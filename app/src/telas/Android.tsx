@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { APPS_ANDROID, PERFIS, RAM_E_DISCO, nomeDoCelular, passoAtual, rotuloDoCelular, urlDaApi, urlDoApk, type AppAndroid, type AssetDaRelease, type EstadoAndroid, type PerfilId, type ProgressoAndroid } from "../android";
+import { APPS_ANDROID, LD_SITE, PERFIS, guardarMotor, motorGuardado, type EstadoLd, type Motor, RAM_E_DISCO, nomeDoCelular, passoAtual, rotuloDoCelular, urlDaApi, urlDoApk, type AppAndroid, type AssetDaRelease, type EstadoAndroid, type PerfilId, type ProgressoAndroid } from "../android";
 import { API_GITHUB } from "../github";
 import { ponte } from "../ponte";
 import { porcentagem } from "../andamento";
@@ -8,8 +8,21 @@ import { Andamento } from "./Andamento";
 const LICENCA = "https://developer.android.com/studio/terms";
 const cartao = "rounded-2xl border border-borda bg-painel p-5";
 
-/** Android: emulador oficial gerenciado pelo Vynx, para testar os apps sem instalar no telefone. */
-export function Android() {
+/** Acha o endereço do APK mais novo de um app (releases do GitHub). */
+async function resolverApk(a: AppAndroid): Promise<{ url: string; token?: string }> {
+  const token = (() => { try { return localStorage.getItem("vynx.github.token") ?? ""; } catch { return ""; } })();
+  const r = await fetch(`${API_GITHUB}/repos/${a.repo}/releases?per_page=20`, { headers: { Accept: "application/vnd.github+json", ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+  if (!r.ok) throw new Error(a.privado && !token ? `Conecte o GitHub no Painel Dev para testar a ${a.nome}.` : `Não achei a versão mais nova do ${a.nome} no GitHub (erro ${r.status}).`);
+  const lista = (await r.json()) as { draft?: boolean; assets?: AssetDaRelease[] }[];
+  const rel = lista.find((x) => !x.draft && (x.assets ?? []).some((y) => y.name.toLowerCase() === a.apk.toLowerCase()));
+  const url = rel ? (a.privado ? urlDaApi(rel.assets, a.apk) : urlDoApk(rel.assets, a.apk)) : null;
+  if (!url) throw new Error(`A versão mais nova do ${a.nome} não tem o arquivo ${a.apk}.`);
+  return { url, token: a.privado ? token : undefined };
+}
+
+
+/** Emulador oficial do Google (mais pesado), gerenciado pelo Vynx. */
+function AndroidOficial() {
   const [e, setE] = useState<EstadoAndroid | null>(null);
   const [prog, setProg] = useState<ProgressoAndroid | null>(null);
   const [erro, setErro] = useState("");
@@ -54,14 +67,9 @@ export function Android() {
   const instalar = async (a: AppAndroid) => {
     setErro(""); setAviso("");
     try {
-      const token = (() => { try { return localStorage.getItem("vynx.github.token") ?? ""; } catch { return ""; } })();
-      const r = await fetch(`${API_GITHUB}/repos/${a.repo}/releases?per_page=20`, { headers: { Accept: "application/vnd.github+json", ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
-      if (!r.ok) throw new Error(a.privado && !token ? `Conecte o GitHub no Painel Dev para testar a ${a.nome}.` : `Não achei a versão mais nova do ${a.nome} no GitHub (erro ${r.status}).`);
-      const lista = (await r.json()) as { draft?: boolean; assets?: AssetDaRelease[] }[];
-      const rel = lista.find((x) => !x.draft && (x.assets ?? []).some((y) => y.name.toLowerCase() === a.apk.toLowerCase()));
-      const url = rel ? (a.privado ? urlDaApi(rel.assets, a.apk) : urlDoApk(rel.assets, a.apk)) : null;
-      if (!url) throw new Error(`A versão mais nova do ${a.nome} não tem o arquivo ${a.apk}.`);
-      await iniciarTarefa(() => ponte.androidInstalar(url, a.pacote, a.privado ? token : undefined));
+      const { url, token } = await resolverApk(a);
+      if (e && !e.ligado && e.celulares[0]) await ponte.androidLigar(e.celulares[0]); // se estiver desligado, liga sozinho; a instalação espera o Android ficar pronto
+      await iniciarTarefa(() => ponte.androidInstalar(url, a.pacote, token));
     } catch (x) { setErro(x instanceof Error ? x.message : String(x)); }
   };
 
@@ -69,7 +77,6 @@ export function Android() {
   const passo = passoAtual(e);
   return (
     <div className="space-y-5">
-      <div><h1 className="text-2xl font-extrabold">Android</h1><p className="text-sm text-suave">Teste os seus apps num celular virtual, sem instalar no telefone.</p></div>
       {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
       {aviso && <p role="status" className="rounded-xl border border-ok/40 bg-painel p-3 text-sm text-ok">{aviso}</p>}
       {(trabalhando || ocupado) && (
@@ -137,23 +144,128 @@ export function Android() {
         </section>
       )}
 
-      {passo === "usar" && (
+      {(passo === "usar" || passo === "ligar") && (
         <section className={cartao} aria-label="Instalar apps">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><h2 className="text-lg font-extrabold">Instalar um app</h2><p className="text-xs text-suave">Pega a versão mais nova das releases do GitHub, instala e abre.</p></div>
+            <div><h2 className="text-lg font-extrabold">Instalar um app</h2><p className="text-xs text-suave">Pega a versão mais nova das releases do GitHub, liga o celular virtual se estiver desligado, instala e abre.</p></div>
             <button disabled={!e.pronto || !!ocupado} onClick={() => void agir("Tirando a foto da tela", async () => { const c = await ponte.androidCaptura(); setAviso(`Foto salva em ${c}`); })} className="min-h-11 rounded-xl border border-borda px-4 font-bold disabled:opacity-40">Foto da tela</button>
           </div>
-          {!e.pronto && <p className="mt-3 text-sm text-aviso">O celular virtual ainda está ligando. A primeira vez demora uns 5 a 10 minutos (o Windows monta o Android do zero); depois fica bem mais rápido. Quando a tela do Android aparecer, é só instalar.</p>}
+          {e.ligado && !e.pronto && <p className="mt-3 text-sm text-aviso">O celular virtual ainda está ligando. A primeira vez demora uns 5 a 10 minutos (o Windows monta o Android do zero); depois fica bem mais rápido. Quando a tela do Android aparecer, é só instalar.</p>}
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {APPS_ANDROID.map((a) => (
               <li key={a.id} className="flex items-center gap-3 rounded-xl border border-borda bg-fundo p-3">
                 <b className="min-w-0 flex-1 truncate">{a.nome}</b>
-                <button disabled={!e.pronto || trabalhando || !!ocupado} onClick={() => void instalar(a)} className="min-h-11 rounded-xl border border-neon px-4 font-bold text-neon disabled:opacity-40">Instalar e abrir</button>
+                <button disabled={trabalhando || !!ocupado} onClick={() => void instalar(a)} className="min-h-11 rounded-xl border border-neon px-4 font-bold text-neon disabled:opacity-40">Instalar e abrir</button>
               </li>
             ))}
           </ul>
         </section>
       )}
+    </div>
+  );
+}
+
+/** LDPlayer: emulador de Android leve, feito para computador fraco. O Vynx controla; a instalação do LDPlayer é sua. */
+function AndroidLd() {
+  const [ld, setLd] = useState<EstadoLd | null>(null);
+  const [prog, setProg] = useState<ProgressoAndroid | null>(null);
+  const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
+  const vivo = useRef(true);
+  useEffect(() => () => { vivo.current = false; }, []);
+  const ler = useCallback(async () => { try { const s = await ponte.ldEstado(); if (vivo.current) setLd(s); } catch (x) { if (vivo.current) setErro(String(x)); } }, []);
+  useEffect(() => { void ler(); }, [ler]);
+  const trabalhando = prog?.ativo === true;
+  useEffect(() => {
+    if (!trabalhando) return;
+    const t = setInterval(async () => {
+      try { const p = await ponte.androidProgresso(); if (!vivo.current) return; setProg(p); if (!p.ativo) { void ler(); if (p.erro) setErro(p.erro); else if (p.concluida) setAviso("Pronto! O app está aberto no LDPlayer."); } } catch { /* tenta de novo */ }
+    }, 1000);
+    return () => clearInterval(t);
+  }, [trabalhando, ler]);
+  const comecar = async (f: () => Promise<void>) => {
+    setErro(""); setAviso("");
+    try { await f(); setProg({ ativo: true, tarefa: "", etapa: "Começando…", detalhe: "", erro: null, concluida: false }); } catch (x) { setErro(String(x)); }
+  };
+  const testar = async (a: AppAndroid) => {
+    setErro(""); setAviso("");
+    try { const { url, token } = await resolverApk(a); await comecar(() => ponte.ldTestar(url, a.pacote, token)); } catch (x) { setErro(x instanceof Error ? x.message : String(x)); }
+  };
+  if (!ld) return <p className="text-suave">{erro || "Procurando o LDPlayer…"}</p>;
+  const estado = !ld.instancia ? "ainda não criado" : ld.pronta ? "ligado" : ld.ligada ? "ligando…" : "desligado";
+  return (
+    <div className="space-y-5">
+      {erro && <p role="alert" className="rounded-xl border border-erro/40 bg-painel p-3 text-sm text-erro">{erro}</p>}
+      {aviso && <p role="status" className="rounded-xl border border-ok/40 bg-painel p-3 text-sm text-ok">{aviso}</p>}
+      {trabalhando && (
+        <Andamento titulo={prog?.tarefa === "ld-ligar" ? "Ligando o LDPlayer" : "Testando no LDPlayer"} etapa={prog?.etapa} detalhe={prog?.detalhe}
+          inicio={(prog?.inicio ?? 0) * 1000 || Date.now()} noticia={(prog?.noticia ?? 0) * 1000 || Date.now()}
+          porcentagem={prog?.passos ? porcentagem(Math.max(1, prog.passo ?? 1), prog.passos) : null}
+          filhos={<p className="text-xs text-suave">A primeira vez demora mais (o LDPlayer monta o Android). Depois liga em poucos segundos.</p>} />
+      )}
+      {!ld.instalado ? (
+        <section className={cartao} aria-label="Instalar o LDPlayer">
+          <h2 className="text-lg font-extrabold">1. Instalar o LDPlayer</h2>
+          <p className="mt-1 text-sm text-suave">O LDPlayer é um emulador de Android grátis e leve, bom para computador mais fraco. O Vynx não instala programas de terceiros: baixe no site oficial e instale como qualquer programa (pode deixar a pasta padrão, C:\LDPlayer). Depois volte aqui.</p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button onClick={() => void ponte.abrirLink(LD_SITE)} className="min-h-11 rounded-xl bg-neon px-5 font-extrabold text-fundo">Abrir o site do LDPlayer</button>
+            <button onClick={() => void ler()} className="min-h-11 rounded-xl border border-borda px-5">Já instalei, conferir de novo</button>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className={cartao} aria-label="Celular virtual do LDPlayer">
+            <h2 className="text-lg font-extrabold">Celular virtual do Vynx</h2>
+            <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-borda bg-fundo p-3">
+              <span className={`size-2.5 rounded-full ${ld.pronta ? "bg-ok" : ld.ligada ? "bg-aviso" : "bg-suave"}`} aria-hidden />
+              <div className="min-w-0 flex-1"><b className="block">LDPlayer · Vynx</b><span className="text-xs text-suave">{estado} · configurado leve: 2 núcleos e 2 GB de memória</span></div>
+              {ld.ligada
+                ? <button onClick={() => void ponte.ldDesligar().then(ler).catch((x) => setErro(String(x)))} disabled={trabalhando} className="min-h-11 rounded-xl border border-erro/60 px-4 font-bold text-erro disabled:opacity-40">Desligar</button>
+                : <button onClick={() => void comecar(() => ponte.ldLigar())} disabled={trabalhando} className="min-h-11 rounded-xl border border-neon px-4 font-bold text-neon disabled:opacity-40">Ligar</button>}
+            </div>
+            <p className="mt-2 text-xs text-suave">Dica: deixe só este celular aberto e feche outros programas pesados. A faixa no topo mostra o uso do computador.</p>
+          </section>
+          <section className={cartao} aria-label="Testar apps">
+            <h2 className="text-lg font-extrabold">Testar um app</h2>
+            <p className="text-xs text-suave">Um toque faz tudo: baixa a versão mais nova, liga o celular virtual se estiver fechado, instala e abre.</p>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {APPS_ANDROID.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 rounded-xl border border-borda bg-fundo p-3">
+                  <b className="min-w-0 flex-1 truncate">{a.nome}</b>
+                  <button disabled={trabalhando} onClick={() => void testar(a)} className="min-h-11 rounded-xl border border-neon px-4 font-bold text-neon disabled:opacity-40">Testar</button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Android: escolha do emulador (LDPlayer leve ou o oficial do Google) e testes dos apps sem instalar no telefone. */
+export function Android() {
+  const [motor, setMotor] = useState<Motor>(motorGuardado);
+  const escolher = (m: Motor) => { setMotor(m); guardarMotor(m); };
+  const opcoes: { id: Motor; nome: string; texto: string }[] = [
+    { id: "ldplayer", nome: "LDPlayer", texto: "Leve e rápido. Recomendado para o seu computador." },
+    { id: "oficial", nome: "Emulador do Google", texto: "Mais pesado. Use se o LDPlayer não servir." },
+  ];
+  return (
+    <div className="space-y-5">
+      <div><h1 className="text-2xl font-extrabold">Android</h1><p className="text-sm text-suave">Teste os seus apps num celular virtual, sem instalar no telefone.</p></div>
+      <div role="radiogroup" aria-label="Emulador" className="grid gap-3 sm:grid-cols-2">
+        {opcoes.map((o) => {
+          const sel = motor === o.id;
+          return (
+            <button key={o.id} role="radio" aria-checked={sel} onClick={() => escolher(o.id)} className={`min-h-16 rounded-xl border-2 p-3 text-left ${sel ? "border-neon bg-neon/10" : "border-borda"}`}>
+              <b className="flex items-center justify-between gap-2">{o.nome}{sel && <span aria-hidden className="text-neon">✓</span>}</b>
+              <span className="block text-xs text-suave">{o.texto}</span>
+            </button>
+          );
+        })}
+      </div>
+      {motor === "ldplayer" ? <AndroidLd /> : <AndroidOficial />}
     </div>
   );
 }

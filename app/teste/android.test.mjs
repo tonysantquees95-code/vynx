@@ -51,3 +51,11 @@ test("urlDoApk só aceita o arquivo esperado, vindo de release da conta", () => 
   assert.equal(urlDoApk(undefined, "Voxix.apk"), null);
   assert.equal(urlDoApk([{ name: "Voxix.apk", browser_download_url: "https://evil.com/x/releases/download/1/Voxix.apk" }], "Voxix.apk"), null);
 });
+
+import { escolherMotor } from "../src/android.ts";
+test("escolher o emulador: o preferido se estiver pronto, senão o outro, senão nenhum", () => {
+  assert.equal(escolherMotor("ldplayer", true, true), "ldplayer");
+  assert.equal(escolherMotor("ldplayer", false, true), "oficial");
+  assert.equal(escolherMotor("oficial", true, false), "ldplayer");
+  assert.equal(escolherMotor("oficial", false, false), null);
+});

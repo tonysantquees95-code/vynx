@@ -4,6 +4,7 @@
 
 mod android;
 mod atualizar;
+mod ldplayer;
 mod metricas;
 mod terminal;
 
@@ -224,6 +225,18 @@ fn pasta_abrir(nome: String) -> Result<(), String> {
     Command::new("explorer.exe").arg(caminho).spawn().map(|_| ()).map_err(|e| e.to_string())
 }
 
+// ---------- LDPlayer (emulador leve) ----------
+#[tauri::command]
+async fn ld_estado() -> ldplayer::EstadoLd { tauri::async_runtime::spawn_blocking(ldplayer::estado).await.unwrap_or_default() }
+#[tauri::command]
+fn ld_ligar() -> Result<(), String> { android::tarefa("ld-ligar", ldplayer::ligar) }
+#[tauri::command]
+async fn ld_desligar() -> Result<(), String> { tauri::async_runtime::spawn_blocking(ldplayer::desligar).await.map_err(|e| e.to_string())? }
+#[tauri::command]
+fn ld_testar(url: String, pacote: String, token: Option<String>) -> Result<(), String> {
+    android::tarefa("ld-testar", move || ldplayer::testar(&url, &pacote, token.as_deref()))
+}
+
 // ---------- Apps da suíte (abrem como janelas do Windows, ao lado do Vynx) ----------
 /// Onde o instalador de cada app coloca o programa (instalação só para o usuário). Só estes dois nomes são aceitos.
 fn caminho_externo(id: &str) -> Option<PathBuf> {
@@ -330,7 +343,7 @@ async fn liberar_ram(encerrar_labs: bool) -> Result<String, String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, importar_cancelar, metricas, liberar_ram, projetos_listar, pasta_abrir, externo_instalado, externo_abrir, tela_cheia, tela_cheia_estado, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura, atualizar_baixar, atualizar_progresso, atualizar_instalar, terminal_abrir, terminal_escrever, terminal_fechar])
+        .invoke_handler(tauri::generate_handler![estado_wsl, criar_laboratorio, descartar_laboratorio, abrir_terminal, instalar_claude, importar_projetos, importar_cancelar, metricas, liberar_ram, ld_estado, ld_ligar, ld_desligar, ld_testar, projetos_listar, pasta_abrir, externo_instalado, externo_abrir, tela_cheia, tela_cheia_estado, abrir_link, android_estado, android_progresso, android_preparar, android_criar, android_ligar, android_desligar, android_instalar, android_captura, atualizar_baixar, atualizar_progresso, atualizar_instalar, terminal_abrir, terminal_escrever, terminal_fechar])
         .run(tauri::generate_context!())
         .expect("erro ao abrir o Vynx OS");
 }

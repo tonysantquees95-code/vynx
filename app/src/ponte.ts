@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { PREFIXO, type EstadoWsl } from "./laboratorio";
 import type { Metricas } from "./metricas";
-import type { EstadoAndroid, ProgressoAndroid, PerfilId } from "./android";
+import type { EstadoLd, EstadoAndroid, ProgressoAndroid, PerfilId } from "./android";
 
 export const ehTauri = (): boolean => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -47,6 +47,11 @@ export interface Ponte {
   androidDesligar(): Promise<void>;
   androidInstalar(url: string, pacote: string, token?: string): Promise<void>;
   androidCaptura(): Promise<string>;
+  // LDPlayer (emulador leve)
+  ldEstado(): Promise<EstadoLd>;
+  ldLigar(): Promise<void>;
+  ldDesligar(): Promise<void>;
+  ldTestar(url: string, pacote: string, token?: string): Promise<void>;
 }
 
 const real: Ponte = {
@@ -86,6 +91,10 @@ const real: Ponte = {
   androidDesligar: () => invoke("android_desligar"),
   androidInstalar: (url, pacote, token) => invoke("android_instalar", { url, pacote, token: token ?? null }),
   androidCaptura: () => invoke<string>("android_captura"),
+  ldEstado: () => invoke<EstadoLd>("ld_estado"),
+  ldLigar: () => invoke("ld_ligar"),
+  ldDesligar: () => invoke("ld_desligar"),
+  ldTestar: (url, pacote, token) => invoke("ld_testar", { url, pacote, token: token ?? null }),
 };
 
 /** Demonstração: o estado do WSL vem de localStorage "vynx.demo.wsl" (o teste visual usa isso). */
@@ -98,6 +107,9 @@ function demo(): Ponte {
   let a: EstadoAndroid = { jdk: false, ferramentas: false, emulador: false, imagem: false, preparado: false, celulares: [], ligado: null, pronto: false, aceleracao: true };
   try { const d = JSON.parse(localStorage.getItem("vynx.demo.android") ?? "null"); if (d) { const p = d.preparado === true; a = { ...a, jdk: p, ferramentas: p, emulador: p, imagem: p, preparado: p, celulares: d.celulares ?? [], ligado: d.ligado ? "emulator-5554" : null, pronto: d.pronto === true }; } } catch { /* usa o padrão */ }
   let cheia = false;
+  // LDPlayer simulado: localStorage "vynx.demo.ld" = {instalado, instancia, ligada, pronta}
+  let ld: EstadoLd = { instalado: false, caminho: null, instancia: false, ligada: false, pronta: false };
+  try { const d = JSON.parse(localStorage.getItem("vynx.demo.ld") ?? "null"); if (d) ld = { ...ld, instalado: d.instalado === true, caminho: d.instalado === true ? "C:\\LDPlayer\\LDPlayer9\\ldconsole.exe" : null, instancia: d.instancia === true, ligada: d.ligada === true, pronta: d.pronta === true }; } catch { /* usa o padrão */ }
   const ouvintes: { saida?: (b: Uint8Array) => void; fim?: () => void; importar?: (l: string) => void } = {};
   const txt = (t: string) => new TextEncoder().encode(t);
   let au: EstadoAtualizacao = { ativo: false, baixado: 0, total: 0, pronto: false, erro: null };
@@ -115,6 +127,10 @@ function demo(): Ponte {
     androidLigar: async () => { a = { ...a, ligado: "emulator-5554", pronto: false }; setTimeout(() => { a = { ...a, pronto: true }; }, 800); },
     androidDesligar: async () => { a = { ...a, ligado: null, pronto: false }; },
     androidInstalar: async () => { void tarefaDemo("instalar", ["Baixando o APK…", "Instalando no celular virtual…"], () => {}); },
+    ldEstado: async () => ({ ...ld }),
+    ldLigar: async () => { void tarefaDemo("ld-ligar", ["Criando o celular virtual do Vynx no LDPlayer…", "Ligando o LDPlayer…"], () => { ld = { ...ld, instancia: true, ligada: true, pronta: true }; }); },
+    ldDesligar: async () => { ld = { ...ld, ligada: false, pronta: false }; },
+    ldTestar: async () => { void tarefaDemo("ld-testar", ["Baixando o APK…", "Ligando o LDPlayer…", "Instalando no LDPlayer…", "Abrindo o app…"], () => { ld = { ...ld, instancia: true, ligada: true, pronta: true }; }); },
     androidCaptura: async () => "C:\\Users\\você\\Pictures\\Vynx\\captura-demo.png",
     estadoWsl: async () => ({ instalado, virtualizacao: instalado ? true : null, distros: [...distros] }),
     criarLaboratorio: async (_b, nome) => { await espera(600); distros = [...distros, { nome: PREFIXO + nome, estado: "Stopped", versao: 2 }]; },

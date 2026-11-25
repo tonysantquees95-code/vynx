@@ -93,7 +93,7 @@ async function abrir(browser, w, h, modo) {
     const caminho = new URL(rota.request().url()).pathname;
     const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" };
     if (rota.request().method() === "OPTIONS") return rota.fulfill({ status: 204, headers: cors });
-    await rota.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(config.respostas?.[caminho] ?? {}) });
+    await rota.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(config.respostas?.[caminho] ?? config.respostasPorPadrao?.find(([re]) => re.test(caminho))?.[1] ?? {}) });
   });
   const p = await ctx.newPage();
   const erros = [];

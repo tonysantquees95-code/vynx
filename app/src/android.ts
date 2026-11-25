@@ -60,3 +60,20 @@ export function urlDaApi(assets: AssetDaRelease[] | undefined, apk: string): str
   const a = (assets ?? []).find((x) => x.name.toLowerCase() === apk.toLowerCase());
   return a?.url && /^https:\/\/api\.github\.com\/repos\/tonysantquees95-code\/[\w.-]+\/releases\/assets\/\d+$/.test(a.url) ? a.url : null;
 }
+
+// ---- LDPlayer (emulador leve) ----
+export interface EstadoLd { instalado: boolean; caminho: string | null; instancia: boolean; ligada: boolean; pronta: boolean }
+export type Motor = "ldplayer" | "oficial";
+export const LD_SITE = "https://www.ldplayer.net/";
+/**
+ * Qual emulador usar ao testar um app: o que a pessoa prefere, se estiver pronto; senão o outro, se estiver pronto; senão nenhum
+ * (e a tela diz o que falta). O LDPlayer é o padrão porque é bem mais leve em computador fraco.
+ */
+export function escolherMotor(preferido: Motor, ldInstalado: boolean, oficialPreparado: boolean): Motor | null {
+  const pronto = (m: Motor) => (m === "ldplayer" ? ldInstalado : oficialPreparado);
+  if (pronto(preferido)) return preferido;
+  const outro: Motor = preferido === "ldplayer" ? "oficial" : "ldplayer";
+  return pronto(outro) ? outro : null;
+}
+export const motorGuardado = (): Motor => { try { return localStorage.getItem("vynx.android.motor") === "oficial" ? "oficial" : "ldplayer"; } catch { return "ldplayer"; } };
+export const guardarMotor = (m: Motor): void => { try { localStorage.setItem("vynx.android.motor", m); } catch { /* sem guardar */ } };
