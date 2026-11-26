@@ -13,7 +13,16 @@ export function Externo({ id }: { id: "vindex" | "velox" }) {
   const a = APPS[id];
   const [instalado, setInstalado] = useState<boolean | null>(null);
   const [erro, setErro] = useState("");
+  const [conferindo, setConferindo] = useState(false);
+  const [aviso, setAviso] = useState("");
   const ler = useCallback(() => { ponte.externoInstalado(id).then(setInstalado).catch(() => setInstalado(false)); }, [id]);
+  const conferir = () => {
+    setConferindo(true); setAviso(""); setErro("");
+    ponte.externoInstalado(id).then((ok) => {
+      setInstalado(ok);
+      setAviso(ok ? "" : `Ainda não achei o ${a.nome}. Se ele for a versão portátil (um .exe solto), instale pelo instalador: o Vynx só enxerga o que foi instalado.`);
+    }).catch(() => { setInstalado(false); setAviso("Não consegui procurar agora. Tente de novo."); }).finally(() => setConferindo(false));
+  };
   useEffect(() => { ler(); }, [ler]);
   return (
     <div className="space-y-4">
@@ -27,7 +36,8 @@ export function Externo({ id }: { id: "vindex" | "velox" }) {
       {instalado === false && (
         <div className="space-y-2 rounded-2xl border border-dashed border-borda p-5"><p className="text-sm">{a.nome} ainda não está instalado neste computador.</p>
           <button onClick={() => void ponte.abrirLink(`${SERVIDOR}${a.pagina}`).catch((e) => setErro(String(e)))} className="min-h-11 rounded-xl bg-neon px-5 font-bold text-fundo">Baixar o {a.nome}</button>
-          <button onClick={ler} className="ml-2 min-h-11 rounded-xl border border-borda px-4 text-sm">Já instalei, conferir de novo</button></div>
+          <button onClick={conferir} disabled={conferindo} className="ml-2 min-h-11 rounded-xl border border-borda px-4 text-sm disabled:opacity-50">{conferindo ? "Procurando…" : "Já instalei, conferir de novo"}</button>
+          {aviso && <p role="status" className="text-sm text-suave">{aviso}</p>}</div>
       )}
       {erro && <p role="alert" className="rounded-lg border border-erro/40 p-2 text-sm text-erro">{erro}</p>}
     </div>

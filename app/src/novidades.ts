@@ -31,6 +31,7 @@ export const NOVIDADES: Novidade[] = [
   { id: 24, data: "2026-11-25", tipo: "novo", titulo: "LDPlayer, o emulador leve", texto: "Na aba Android agora dá para escolher o LDPlayer, um emulador feito para computador fraco. O Vynx cria um celular virtual leve, liga e instala os apps. Você só precisa instalar o LDPlayer uma vez (o botão leva ao site oficial)." },
   { id: 25, data: "2026-11-25", tipo: "melhoria", titulo: "Testar já liga o celular sozinho", texto: "Ao tocar em Testar (no Painel Dev ou na aba Android) com o emulador fechado, o Vynx liga o celular virtual, instala o app e abre, sem pedir para voltar e ligar antes." },
   { id: 26, data: "2026-11-25", tipo: "melhoria", titulo: "Painel Dev mais completo", texto: "Agora mostra todos os apps de uma vez: situação do build (verde, amarelo ou vermelho), última versão, os últimos builds e a atividade recente. Builds quebrados aparecem em destaque no topo." },
+  { id: 27, data: "2026-11-26", tipo: "correcao", titulo: "Vynx acha o Velox já instalado", texto: "Se o Velox ou o Vindex já estavam instalados, o Vynx agora os encontra mesmo em outra pasta e abre direto. O botão “Já instalei, conferir de novo” agora mostra que está procurando e diz o que achou." },
 ];
 
 export const ROTULO: Record<TipoNovidade, string> = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

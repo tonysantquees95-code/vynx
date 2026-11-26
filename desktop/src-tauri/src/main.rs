@@ -238,11 +238,42 @@ fn ld_testar(url: String, pacote: String, token: Option<String>) -> Result<(), S
 }
 
 // ---------- Apps da suíte (abrem como janelas do Windows, ao lado do Vynx) ----------
-/// Onde o instalador de cada app coloca o programa (instalação só para o usuário). Só estes dois nomes são aceitos.
+/// Onde procurar cada app da suíte: o lugar padrão do instalador (só para o usuário ou para todos) e, se a pessoa instalou em outra pasta,
+/// o lugar que o próprio instalador anotou no registro do Windows. Só estes dois nomes de programa são aceitos.
+fn nomes_externo(id: &str) -> Option<(&'static str, &'static str)> {
+    match id { "vindex" => Some(("Vindex", "Vindex.exe")), "velox" => Some(("Velox", "Velox.exe")), _ => None }
+}
+
+/// Pastas de instalação anotadas no registro (Desinstalar programas) por um programa com este nome.
+fn pastas_do_registro(nome: &str) -> Vec<PathBuf> {
+    let mut achadas = Vec::new();
+    for raiz in ["HKCU", "HKLM"] {
+        let base = format!("{raiz}\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+        let Ok(saida) = Command::new("reg.exe").args(["query", &base, "/s", "/f", nome, "/d"]).output() else { continue };
+        let texto = String::from_utf8_lossy(&saida.stdout).to_string();
+        let chaves: Vec<String> = texto.lines().filter(|l| l.starts_with("HKEY_")).map(|l| l.trim().to_string()).collect();
+        for chave in chaves {
+            let Ok(r) = Command::new("reg.exe").args(["query", &chave, "/v", "InstallLocation"]).output() else { continue };
+            for linha in String::from_utf8_lossy(&r.stdout).lines() {
+                if let Some(pos) = linha.find("REG_SZ") {
+                    let v = linha[pos + 6..].trim().trim_matches('"');
+                    if !v.is_empty() { achadas.push(PathBuf::from(v)); }
+                }
+            }
+        }
+    }
+    achadas
+}
+
 fn caminho_externo(id: &str) -> Option<PathBuf> {
-    let sub = match id { "vindex" => "Vindex\\Vindex.exe", "velox" => "Velox\\Velox.exe", _ => return None };
-    let base = std::env::var("LOCALAPPDATA").ok()?;
-    Some(PathBuf::from(base).join("Programs").join(sub))
+    let (pasta, exe) = nomes_externo(id)?;
+    let mut candidatos: Vec<PathBuf> = Vec::new();
+    if let Ok(l) = std::env::var("LOCALAPPDATA") { candidatos.push(PathBuf::from(l).join("Programs").join(pasta).join(exe)); }
+    for var in ["ProgramFiles", "ProgramFiles(x86)"] {
+        if let Ok(p) = std::env::var(var) { candidatos.push(PathBuf::from(p).join(pasta).join(exe)); }
+    }
+    if let Some(p) = candidatos.iter().find(|p| p.exists()) { return Some(p.clone()); }
+    pastas_do_registro(pasta).into_iter().map(|d| d.join(exe)).find(|p| p.exists()).or_else(|| candidatos.into_iter().next())
 }
 #[tauri::command]
 fn externo_instalado(id: String) -> bool { caminho_externo(&id).map(|p| p.exists()).unwrap_or(false) }
