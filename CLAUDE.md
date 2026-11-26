@@ -63,3 +63,8 @@
 - Servidor (`vetorial-servidor`): o app precisa estar em `feedback/dados.js` (`APPS`), no mapa de atualização e no Painel Dev; o Vindex enxerga todos os apps.
 - Atualização por dentro (Windows): `atualizar.rs` baixa `VynxSetup.exe` com `curl.exe` (progresso por `atualizar_progresso`), confere tamanho e SHA-256 do servidor e `atualizar_instalar` abre o instalador e fecha o app. A URL só vale se for `github.com/tonysantquees95-code/vynx/releases/download/.../VynxSetup.exe`. NÃO use `abrir_link` para baixar: ele recusa `&` na URL. Interface em `telas/Ajustes.tsx` (Baixar atualização → barra → Instalar); demo em `ponte.ts`.
 - Repositório público: nunca coloque chave, token ou senha no código.
+
+## Teste de segurança (igual em todos os apps da suíte)
+- `app/teste/seguranca.test.mjs` roda junto com os outros testes e na publicação: se falhar, a publicação para. Confere o repositório inteiro: segredo escrito no código (chaves, tokens, senhas), arquivo que nunca pode ser versionado (.env, chaves de assinatura), CSP do Tauri sem `unsafe-eval`/curinga, manifesto do Android (debug, tráfego http, componente exposto sem permissão, `QUERY_ALL_PACKAGES`), `eval`, HTML montado com texto (`innerHTML`), endereço `http://` fora da máquina local, segredo no log, HTTPS desligado e WebView com acesso perigoso.
+- Exceção justificada = uma linha em `seguranca.permitidos.json` (regra, arquivo, trecho e MOTIVO de verdade); sem motivo, não vale. Texto digitado pela pessoa ou vindo de site/servidor nunca entra em HTML sem escapar (`textContent` ou `esc()`).
+- O arquivo é o mesmo em todos os apps: mudou uma regra? Mude em todos. Achou uma brecha nova? Escreva primeiro um teste que a reproduz.
