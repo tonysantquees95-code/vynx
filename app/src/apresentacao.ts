@@ -1,18 +1,19 @@
 // Primeira abertura: conhecer as funções, entender as permissões e aceitar os termos.
 // Mudou o texto dos termos: suba VERSAO_DOS_TERMOS e a pessoa aceita de novo.
+import type { NomeTour } from "./icones.tsx";
 export const VERSAO_DOS_TERMOS = 3;
 const CHAVE_TERMOS = "vynx.termos";
 const CHAVE_TOUR = "vynx.tour";
 
-export interface PassoDoTour { icone: string; titulo: string; texto: string; como?: string[] }
+export interface PassoDoTour { icone: NomeTour; titulo: string; texto: string; como?: string[] }
 
 export const TOUR: PassoDoTour[] = [
-  { icone: "🧪", titulo: "Bem-vindo ao Vynx OS", texto: "O espaço seguro para quem desenvolve: teste programas e projetos sem sujar o seu computador e sem mexer nos seus arquivos.", como: ["Deslize ou toque em Próximo para conhecer.", "Dá para rever esta apresentação em Ajustes › Como o Vynx funciona."] },
-  { icone: "📦", titulo: "Laboratório descartável", texto: "Cada teste roda num Linux isolado, criado em segundos. Quando terminar, é só descartar: não sobra nada.", como: ["Em Laboratório, toque em Criar laboratório e dê um nome.", "O laboratório nasce sem acesso aos arquivos do Windows.", "Terminou? Toque em Descartar e ele some por inteiro."] },
-  { icone: "📱", titulo: "Emulador de Android", texto: "Teste os apps Android num celular virtual, sem instalar no telefone. O Vynx baixa e prepara tudo para você.", como: ["Abra a aba Android e aceite a licença.", "Toque em Preparar emulador (baixa uns 3 GB, só uma vez).", "Crie um celular virtual, ligue e instale um app."] },
-  { icone: "🛰️", titulo: "Painel Dev", texto: "Veja os seus repositórios do GitHub, as builds que quebraram e os últimos resultados, num lugar só.", como: ["Cole o seu token do GitHub uma vez.", "O token fica só neste computador, nunca vai para os servidores da Vetorial."] },
-  { icone: "🧰", titulo: "Ferramentas da suíte", texto: "Vindex (PDF e documentos) e Velox Pro (navegador) já têm atalho aqui, e o app Arquivos mostra os seus projetos. Em cima você vê o uso do processador, da placa de vídeo e da memória.", como: ["Toque na faixa do topo para ver detalhes e liberar memória.", "F11 liga e desliga a tela cheia."] },
-  { icone: "🚀", titulo: "Fase de testes", texto: "O Vynx OS está no começo. Estão a caminho: atualizador de drivers, Vetorial Office e a versão em ISO para instalar como sistema.", como: ["Conte o que achou em Ajustes › Enviar feedback."] },
+  { icone: "laboratorio", titulo: "Bem-vindo ao Vynx OS", texto: "O espaço seguro para quem desenvolve: teste programas e projetos sem sujar o seu computador e sem mexer nos seus arquivos.", como: ["Deslize ou toque em Próximo para conhecer.", "Dá para rever esta apresentação em Ajustes › Como o Vynx funciona."] },
+  { icone: "caixa", titulo: "Laboratório descartável", texto: "Cada teste roda num Linux isolado, criado em segundos. Quando terminar, é só descartar: não sobra nada.", como: ["Em Laboratório, toque em Criar laboratório e dê um nome.", "O laboratório nasce sem acesso aos arquivos do Windows.", "Terminou? Toque em Descartar e ele some por inteiro."] },
+  { icone: "android", titulo: "Emulador de Android", texto: "Teste os apps Android num celular virtual, sem instalar no telefone. O Vynx baixa e prepara tudo para você.", como: ["Abra a aba Android e aceite a licença.", "Toque em Preparar emulador (baixa uns 3 GB, só uma vez).", "Crie um celular virtual, ligue e instale um app."] },
+  { icone: "painel", titulo: "Painel Dev", texto: "Veja os seus repositórios do GitHub, as builds que quebraram e os últimos resultados, num lugar só.", como: ["Cole o seu token do GitHub uma vez.", "O token fica só neste computador, nunca vai para os servidores da Vetorial."] },
+  { icone: "documentos", titulo: "Ferramentas da suíte", texto: "Vindex (PDF e documentos) e Velox Pro (navegador) já têm atalho aqui, e o app Arquivos mostra os seus projetos. Em cima você vê o uso do processador, da placa de vídeo e da memória.", como: ["Toque na faixa do topo para ver detalhes e liberar memória.", "F11 liga e desliga a tela cheia."] },
+  { icone: "foguete", titulo: "Fase de testes", texto: "O Vynx OS está no começo. Estão a caminho: atualizador de drivers, Vetorial Office e a versão em ISO para instalar como sistema.", como: ["Conte o que achou em Ajustes › Enviar feedback."] },
 ];
 
 export const TERMOS: { titulo: string; texto: string }[] = [

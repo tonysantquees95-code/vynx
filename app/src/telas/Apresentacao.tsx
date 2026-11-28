@@ -1,3 +1,4 @@
+import { IconeTour } from "../icones";
 import { useRef, useState } from "react";
 import { aceitarTermos, marcarTourVisto, TERMOS, TOUR } from "../apresentacao";
 import { marcarVisto, ultimoId } from "../novidades";
@@ -29,8 +30,8 @@ export function Tour({ aoTerminar, rotuloFinal = "Continuar", aoFechar }: { aoTe
   return (
     <div className="flex min-h-0 flex-1 flex-col" onTouchStart={(e) => { inicio.current = e.touches[0]!.clientX; }} onTouchEnd={(e) => { if (inicio.current === null) return; const dx = e.changedTouches[0]!.clientX - inicio.current; inicio.current = null; if (Math.abs(dx) > 60) ir(dx < 0 ? 1 : -1); }}>
       <div className="flex items-center justify-between"><Logo tam={32} />{aoFechar ? <button onClick={aoFechar} aria-label="Fechar" className="grid min-h-10 min-w-10 place-items-center text-suave">✕</button> : <button onClick={aoTerminar} className="min-h-10 px-3 text-sm text-suave underline">Pular</button>}</div>
-      <div className="rolagem flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto text-center">
-        <div className="grid h-24 w-24 place-items-center rounded-3xl border border-borda bg-painel text-5xl shadow-[0_0_40px_-10px_var(--color-neon)]" aria-hidden>{p.icone}</div>
+      <div className="rolagem flex min-h-0 flex-1 flex-col items-center [justify-content:safe_center] gap-4 overflow-y-auto text-center">
+        <div className="shrink-0 grid h-24 w-24 place-items-center rounded-3xl border border-borda bg-painel text-neon shadow-[0_0_40px_-10px_var(--color-neon)]" aria-hidden><IconeTour nome={p.icone} tam={48} /></div>
         <h1 className="text-2xl font-extrabold">{p.titulo}</h1>
         <p className="text-suave">{p.texto}</p>
         {p.como && <ul className="w-full space-y-2 rounded-2xl border border-borda bg-painel p-4 text-left text-sm">{p.como.map((c) => <li key={c} className="flex gap-2"><span className="text-neon">›</span><span>{c}</span></li>)}</ul>}
@@ -50,19 +51,19 @@ function Permissoes({ aoVoltar, aoContinuar }: { aoVoltar: () => void; aoContinu
       <div><h1 className="text-2xl font-extrabold">Permissões</h1><p className="mt-1 text-sm text-suave">O Vynx pede o mínimo. Veja o que é usado e por quê:</p></div>
       <ul className="rolagem min-h-0 flex-1 space-y-3 overflow-y-auto">
         <li className="rounded-2xl border border-borda bg-painel p-4">
-          <div className="flex items-center justify-between gap-2"><b>🐧 WSL2 (Linux no Windows)</b><span className="text-xs text-aviso">precisa estar ligado</span></div>
+          <div className="flex items-center justify-between gap-2"><b className="flex items-center gap-2"><IconeTour nome="terminal" tam={18} className="text-neon" />WSL2 (Linux no Windows)</b><span className="text-xs text-aviso">precisa estar ligado</span></div>
           <p className="mt-1 text-sm text-suave">Os laboratórios são distribuições Linux do WSL2. Se ele ainda não estiver instalado, o Vynx mostra o passo a passo em Laboratório. Ligar a virtualização na BIOS pode ser necessário.</p>
         </li>
         <li className="rounded-2xl border border-borda bg-painel p-4">
-          <div className="flex items-center justify-between gap-2"><b>📱 Emulador de Android</b><span className="text-xs text-aviso">só se você usar</span></div>
+          <div className="flex items-center justify-between gap-2"><b className="flex items-center gap-2"><IconeTour nome="android" tam={18} className="text-neon" />Emulador de Android</b><span className="text-xs text-aviso">só se você usar</span></div>
           <p className="mt-1 text-sm text-suave">Na aba Android, o Vynx pede a sua licença antes de baixar o emulador (uns 3 GB) e usa a virtualização do computador. Se a virtualização estiver desligada na BIOS, o emulador fica lento ou não liga.</p>
         </li>
         <li className="rounded-2xl border border-borda bg-painel p-4">
-          <div className="flex items-center justify-between gap-2"><b>🌐 Internet</b><span className="text-xs text-ok">liberada</span></div>
+          <div className="flex items-center justify-between gap-2"><b className="flex items-center gap-2"><IconeTour nome="velox" tam={18} className="text-neon" />Internet</b><span className="text-xs text-ok">liberada</span></div>
           <p className="mt-1 text-sm text-suave">Para o Painel Dev falar com o GitHub (com o seu token), para procurar atualizações do Vynx e, se você usar o emulador, para baixá-lo e baixar os apps de teste.</p>
         </li>
         <li className="rounded-2xl border border-borda bg-painel p-4">
-          <div className="flex items-center justify-between gap-2"><b>📁 Seus arquivos</b><span className="text-xs text-ok">fora do alcance</span></div>
+          <div className="flex items-center justify-between gap-2"><b className="flex items-center gap-2"><IconeTour nome="arquivos" tam={18} className="text-neon" />Seus arquivos</b><span className="text-xs text-ok">fora do alcance</span></div>
           <p className="mt-1 text-sm text-suave">Os laboratórios nascem sem acesso às suas pastas do Windows. O que acontece lá dentro fica lá dentro.</p>
         </li>
       </ul>

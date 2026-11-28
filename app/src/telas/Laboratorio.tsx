@@ -1,3 +1,4 @@
+import { IconeTour } from "../icones";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bases, laboratorios, limparNome, nomeValido, type EstadoWsl } from "../laboratorio";
 import { ponte } from "../ponte";
@@ -116,7 +117,7 @@ export function Laboratorio() {
         </div>
       )}
       {labs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-borda p-8 text-center text-suave"><p className="text-4xl" aria-hidden>🧪</p><p className="mt-2">Nenhum laboratório ainda. Crie o primeiro para testar um programa sem risco.</p></div>
+        <div className="rounded-2xl border border-dashed border-borda p-8 text-center text-suave"><IconeTour nome="laboratorio" tam={40} className="mx-auto text-neon" /><p className="mt-2">Nenhum laboratório ainda. Crie o primeiro para testar um programa sem risco.</p></div>
       ) : (
         <ul className="space-y-3">
           {labs.map((l) => (

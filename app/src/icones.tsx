@@ -29,3 +29,13 @@ export function IconeApp({ id, tam = 24 }: { id: IdApp; tam?: number }) {
     <svg width={tam} height={tam} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{D[id]}</svg>
   );
 }
+
+/** Ícones das telas de apresentação, no mesmo traço fino do Vynx. */
+const EXTRAS = {
+  caixa: <><path d="M4 8.500 12 4l8 4.500v7L12 20l-8-4.500z" /><path d="M4 8.500 12 13l8-4.500M12 13v7" /></>,
+  foguete: <><path d="M12 3c3.500 2.500 5 6 4 11H8c-1-5 .5-8.500 4-11z" /><path d="M8 11l-3 3v3l3.500-1.500M16 11l3 3v3l-3.500-1.500M10.500 17.500 12 21l1.500-3.500" /></>,
+};
+export type NomeTour = IdApp | keyof typeof EXTRAS;
+export function IconeTour({ nome, tam = 24, className }: { nome: NomeTour; tam?: number; className?: string }) {
+  return <svg width={tam} height={tam} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>{nome === "caixa" || nome === "foguete" ? EXTRAS[nome] : D[nome]}</svg>;
+}
